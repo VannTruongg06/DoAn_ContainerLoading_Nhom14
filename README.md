@@ -1,4 +1,4 @@
-# Du An Container Loading - Nhom 12
+# Du An Container Loading - Nhom 14
 
 ## Gioi thieu
 Day la du an giai quyet bai toan xep hang vao container su dung cac thuat toan DP, Greedy va Genetic Algorithm.
