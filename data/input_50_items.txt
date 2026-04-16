@@ -1,0 +1,4 @@
+# ID Width Height Depth Weight
+1 10 10 10 5
+2 20 20 20 10
+...
