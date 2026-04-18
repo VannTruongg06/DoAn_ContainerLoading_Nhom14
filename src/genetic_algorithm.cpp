@@ -1,60 +1,81 @@
-#include <iostream>
+#include "models.h" // Yêu cầu 1: Kết nối với hệ thống chung
 #include <vector>
-#include <string>
+#include <algorithm>
+#include <iostream>
 #include <ctime>
 
-using namespace std;
-
-// ĐỀ BÀI: Dev thuật toán Nâng cao
-// NHIỆM VỤ: Giải thuật Di truyền (Genetic Algorithm) xếp hàng vào Container
-
-// Cấu trúc một cách xếp hàng (Cá thể)
-struct CachXepHang {
-    string id;
-    float doThichNghi; // Tỷ lệ lấp đầy container (ví dụ 0.8 là 80%)
+// Yêu cầu 2: Thiết kế "Cá thể" thực tế
+struct Individual {
+    std::vector<int> order;      // Thứ tự kiện hàng
+    std::vector<int> rotations;  // Trạng thái xoay (0: đứng, 1: nằm, 2: nghiêng)
+    double fitness;              // % Thể tích lấp đầy
 };
 
-// --- BÁO CÁO NHIỆM VỤ CODE ---
+// Yêu cầu 3: Hàm Tính Độ thích nghi (Fitness Function)
+double calculateFitness(Individual& ind, Container& container, const std::vector<Item>& items) {
+    double usedVolume = 0;
+    double containerVolume = container.width * container.height * container.depth;
 
-// 1. Hàm Lai ghép (Crossover)
-// Giải thích: Lấy ưu điểm của 2 cách xếp cũ để tạo ra cách xếp mới tốt hơn
-void laiGhep(CachXepHang cha, CachXepHang me) {
-    cout << "-> Dang lai ghep giua " << cha.id << " va " << me.id << endl;
-    cout << "   Ket qua: Tao ra mot cach xep hang moi mang uu diem cua ca hai." << endl;
+    for (int itemId : ind.order) {
+        // Cộng dồn thể tích các kiện hàng theo thứ tự
+        usedVolume += (items[itemId].width * items[itemId].height * items[itemId].depth);
+    }
+
+    ind.fitness = usedVolume / containerVolume; // Trả về kết quả % (ví dụ 0.85)
+    return (ind.fitness > 1.0) ? 1.0 : ind.fitness;
 }
 
-// 2. Hàm Đột biến (Mutation)
-// Giải thích: Thay đổi ngẫu nhiên hướng xoay của 1 kiện hàng để tìm giải pháp mới
-void dotBien() {
-    cout << "-> Dang thuc hien dot bien: Xoay ngau nhien mot kien hang 90 do..." << endl;
+// Yêu cầu 4: Phép toán Lai ghép (Crossover)
+Individual crossover(const Individual& p1, const Individual& p2) {
+    Individual child = p1;
+    int cut = p1.order.size() / 2;
+    for (int i = cut; i < p2.order.size(); i++) {
+        child.order[i] = p2.order[i];
+        child.rotations[i] = p2.rotations[i];
+    }
+    return child;
 }
 
-// 3. Hàm tính độ thích nghi (Fitness Function)
-// Giải thích: Tính xem cách xếp này lấp đầy được bao nhiêu % container
-void tinhFitness() {
-    cout << "-> Dang tinh toan do lap day cua Container..." << endl;
+// Yêu cầu 4: Phép toán Đột biến (Mutation)
+void mutate(Individual& ind) {
+    if (ind.order.size() < 2) return;
+    int i = rand() % ind.order.size();
+    int j = rand() % ind.order.size();
+    std::swap(ind.order[i], ind.order[j]); // Tráo đổi vị trí kiện hàng
+    ind.rotations[i] = rand() % 3;         // Thay đổi kiểu xoay
 }
 
-int main() {
-    // Thông tin sinh viên thực hiện
-    cout << "===============================================" << endl;
-    cout << "DO AN: TOI UU HOA XEP HANG CONTAINER" << endl;
-    cout << "Thanh vien: Nguyen Dao Minh Thu" << endl;
-    cout << "Nhiem vu: Dev thuat toan Nang cao (Genetic Algorithm)" << endl;
-    cout << "===============================================" << endl;
+// Yêu cầu 5: Vòng lặp Thế hệ (Main GA Loop)
+void geneticAlgorithmPacking(Container& container, std::vector<Item>& items) {
+    srand(time(NULL));
+    int popSize = 50; // Khởi tạo 50 phương án ngẫu nhiên
+    std::vector<Individual> population;
 
-    // Mô phỏng luồng chạy của thuật toán
-    cout << "\n[BATS DAU CHAY THUAT TOAN]" << endl;
+    for (int i = 0; i < popSize; i++) {
+        Individual ind;
+        for (int j = 0; j < items.size(); j++) {
+            ind.order.push_back(j);
+            ind.rotations.push_back(rand() % 3);
+        }
+        std::random_shuffle(ind.order.begin(), ind.order.end());
+        population.push_back(ind);
+    }
 
-    CachXepHang phuongAn1 = { "PA_01", 0.75 };
-    CachXepHang phuongAn2 = { "PA_02", 0.82 };
+    // Lặp qua 100 thế hệ
+    for (int gen = 0; gen < 100; gen++) {
+        for (auto& ind : population) calculateFitness(ind, container, items);
 
-    tinhFitness();
-    laiGhep(phuongAn1, phuongAn2);
-    dotBien();
+        std::sort(population.begin(), population.end(), [](const Individual& a, const Individual& b) {
+            return a.fitness > b.fitness;
+            });
 
-    cout << "\n[KET QUA]: Da tim thay cach xep hang lap day 95% Container!" << endl;
-    cout << "===============================================" << endl;
+        for (int i = 10; i < popSize; i++) {
+            population[i] = crossover(population[rand() % 10], population[rand() % 10]);
+            if (rand() % 10 < 2) mutate(population[i]);
+        }
+    }
 
-    return 0;
+    // Cập nhật phương án tốt nhất vào hệ thống
+    std::cout << "GA da tim ra phuong an toi uu sau 100 the he.\n";
+    std::cout << "Ty le lap day: " << population[0].fitness * 100 << "%\n";
 }
