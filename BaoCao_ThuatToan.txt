@@ -1,16 +1,18 @@
-# Du An Container Loading - Nhom 14
+======================================================
+BÁO CÁO: THUẬT TOÁN DI TRUYỀN (GENETIC ALGORITHM)
+Người thực hiện: Nguyễn Bảo Chin Pôn
+======================================================
 
-## Gioi thieu
-Day la du an giai quyet bai toan xep hang vao container su dung cac thuat toan DP, Greedy va Genetic Algorithm.
+1. CƠ SỞ LÝ THUYẾT:
+- Thuật toán mô phỏng sự tiến hóa tự nhiên để tối ưu hóa việc xếp hàng.
+- Fitness (Độ thích nghi): Là tỷ lệ lấp đầy container, càng cao càng tốt.
 
-## Cau truc thu muc
-- `src/`: Chua ma nguon C++
-- `data/`: Chua file input va output
-- `docs/`: Chua bao cao va thuyet trinh
+2. MÃ GIẢ (PSEUDOCODE):
+- Bước 1: Khởi tạo quần thể các phương án xếp hàng ngẫu nhiên.
+- Bước 2: Tính toán độ lấp đầy cho từng phương án.
+- Bước 3: Lai ghép (Crossover) các phương án tốt để tạo đời con.
+- Bước 4: Đột biến (Mutation) bằng cách xoay kiện hàng để tìm vị trí trống.
+- Bước 5: Lặp lại quá trình tiến hóa cho đến khi đạt kết quả tối ưu.
 
-## Cach bien dich va chay
-Dung g++ de bien dich:
-```bash
-g++ src/main.cpp src/knapsack_dp.cpp src/greedy_packing.cpp src/genetic_algorithm.cpp -o main
-./main
-```
+3. GIẢI THÍCH LUỒNG CHẠY:
+Hệ thống sẽ liên tục sàng lọc các cách xếp hàng lãng phí diện tích. Qua việc lai tạo và đột biến, thuật toán tìm ra cách lấp đầy Container thông minh hơn các phương pháp thủ công.
