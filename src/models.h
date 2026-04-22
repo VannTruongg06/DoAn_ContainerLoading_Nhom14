@@ -3,6 +3,22 @@
 
 #include <vector>
 #include <string>
+#include <numeric>
+
+// Định nghĩa các chiến lược đóng gói
+enum Strategy {
+    FIRST_FIT,
+    BEST_FIT,
+    FFD, // First Fit Decreasing
+    BFD, // Best Fit Decreasing
+    EXTREME_POINT
+};
+
+// Cấu trúc điểm 3D cho Extreme Points
+struct Point3D {
+    int x, y, z;
+    Point3D(int _x, int _y, int _z) : x(_x), y(_y), z(_z) {}
+};
 
 struct Item {
     int id;
@@ -19,8 +35,18 @@ struct Item {
         : id(_id), width(w), height(h), depth(d), o_w(w), o_h(h), o_d(d),
           weight(we), value(val), x(0), y(0), z(0), isPacked(false), orientation(0) {}
 
+    // Toán tử so sánh (dùng cho các thuật toán sắp xếp pair/vector)
+    bool operator<(const Item& other) const {
+        return id < other.id;
+    }
+
     long long getVolume() const {
         return (long long)width * height * depth;
+    }
+
+    double getDensity() const {
+        if (weight == 0) return 0;
+        return (double)value / weight;
     }
 
     // Hàm xoay kiện hàng (6 hướng trong không gian 3D)
@@ -55,6 +81,18 @@ struct Container {
         
     long long getMaxVolume() const {
         return (long long)width * height * depth;
+    }
+
+    int getCurrentWeight() const {
+        int total = 0;
+        for (const auto& item : packedItems) total += item.weight;
+        return total;
+    }
+
+    long long getUsedVolume() const {
+        long long total = 0;
+        for (const auto& item : packedItems) total += item.getVolume();
+        return total;
     }
 };
 

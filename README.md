@@ -9,8 +9,8 @@ Day la du an giai quyet bai toan xep hang vao container su dung cac thuat toan D
 - `docs/`: Chua bao cao va thuyet trinh
 
 ## Cach bien dich va chay
-Dung g++ de bien dich:
+Dung g++ de bien dich (chay trong thu muc DoAn_ContainerLoading_Nhom14):
 ```bash
-g++ src/main.cpp src/knapsack_dp.cpp src/greedy_packing.cpp src/genetic_algorithm.cpp -o main
-./main
+g++ src/*.cpp -Isrc -o main.exe
+./main.exe
 ```
