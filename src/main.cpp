@@ -8,31 +8,9 @@
 #include "knapsack_algorithms.h"
 #include "packing_algorithms.h"
 #include "meta_heuristics.h"
-#include "genetic_algorithm.h"
+#include "dataset_loader.h"
 
 using namespace std;
-
-// Hàm đọc dữ liệu từ file
-vector<Item> readData(const string& filename) {
-    vector<Item> items;
-    ifstream file(filename);
-    if (!file.is_open()) {
-        cerr << "Loi: Khong the mo file " << filename << endl;
-        return items;
-    }
-
-    string line;
-    while (getline(file, line)) {
-        if (line.empty() || line[0] == '#') continue;
-        stringstream ss(line);
-        int id, w, h, d, we, val;
-        if (ss >> id >> w >> h >> d >> we >> val) {
-            items.emplace_back(id, w, h, d, we, val);
-        }
-    }
-    file.close();
-    return items;
-}
 
 void exportResult(const Container& container, const string& filename) {
     ofstream file(filename);
@@ -57,15 +35,28 @@ void exportResult(const Container& container, const string& filename) {
 }
 
 int main() {
-    Container myContainer(100, 100, 100, 500);
-    vector<Item> items = readData("data/input_50_items.txt");
-    if (items.empty()) { cout << "Khong co du lieu!\n"; return 1; }
-
-    int choiceK, choiceP;
     cout << "===============================================\n";
     cout << "       DO AN: TOI UU HOA XEP HANG CONTAINER    \n";
     cout << "===============================================\n";
-    
+
+    string filepath;
+    cout << "\nNhap duong dan file dataset.\n(vd: data/input_50_items.txt, data/bedbpp/bedbpp_order_demo_1.txt): ";
+    cin >> filepath;
+
+    // Sử dụng C++ Pro: DatasetLoader chuyên nghiệp để đọc Header tự động
+    Container myContainer = DatasetLoader::loadContainer(filepath);
+    vector<Item> items = DatasetLoader::loadItems(filepath);
+
+    if (items.empty()) { 
+        cout << "[!] Khong co du lieu hoac file khong ton tai!\n"; 
+        return 1; 
+    }
+
+    cout << "\n[+] Da load " << items.size() << " kien hang.\n";
+    cout << "[+] Container: " << myContainer.width << "x" << myContainer.height << "x" << myContainer.depth 
+         << " (MaxWeight: " << myContainer.maxWeight << ")\n";
+
+    int choiceK, choiceP;
     // Menu 1: Chon thuat toan loc hang
     cout << "\n[1] CHON THUAT TOAN LOC HANG (KNAPSACK):\n";
     cout << "1. Quy hoach dong (DP - Toi uu nhat)\n";
