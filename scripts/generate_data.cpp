@@ -81,6 +81,13 @@ int main() {
     cout << "      DATA GENERATOR (C++ VERSION)             \n";
     cout << "===============================================\n\n";
 
+    // Tạo thư mục data nếu chưa có
+    #ifdef _WIN32
+        system("if not exist data mkdir data");
+    #else
+        system("mkdir -p data");
+    #endif
+
     random_device rd;
     mt19937 rng(rd());
 

@@ -1,0 +1,11 @@
+Dataset,Items,Knapsack,Packing,FillRate(%),Time(ms),TotalValue($)
+data/input_50_items.txt,50,Greedy,FF,28.51,0.03,31044
+data/input_50_items.txt,50,Greedy,FFD,28.51,0.03,31044
+data/input_50_items.txt,50,DP,BFD,28.51,1.06,31044
+data/input_50_items.txt,50,BnB,FFD,28.51,0.12,31044
+data/input_50_items.txt,50,DP,EP,28.51,0.69,31044
+data/input_100_items.txt,100,Greedy,FF,16.02,0.02,31491
+data/input_100_items.txt,100,Greedy,FFD,16.02,0.02,31491
+data/input_100_items.txt,100,DP,BFD,15.87,1.80,31814
+data/input_100_items.txt,100,BnB,FFD,15.87,0.21,31814
+data/input_100_items.txt,100,DP,EP,15.87,1.37,31814

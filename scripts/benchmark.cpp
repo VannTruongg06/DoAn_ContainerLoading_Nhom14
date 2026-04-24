@@ -3,92 +3,101 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <iomanip>
+#include <cstdlib>
 
-// Giả lập output CSV cho Benchmarking
-// Thay vì import mã nguồn phức tạp từ ../src, phiên bản C++ này mô phỏng thời gian 
-// và kết quả chạy như một Engine độc lập tương đương bản Python trước đó.
+// Import mã nguồn từ src (giả định biên dịch cùng các file .cpp trong src)
+#include "../src/models.h"
+#include "../src/dataset_loader.h"
+#include "../src/knapsack_algorithms.h"
+#include "../src/packing_algorithms.h"
+#include "../src/meta_heuristics.h"
 
 using namespace std;
 
-struct BenchmarkResult {
-    string dataset;
-    int items;
-    string knapsack;
-    string packing;
-    double fillRate;
-    double timeMs;
-    int totalValue;
-};
-
-BenchmarkResult simulateAlgo(string dataset, int items, string knapsack, string packing, int baseValue) {
-    BenchmarkResult res;
-    res.dataset = dataset;
-    res.items = items;
-    res.knapsack = knapsack;
-    res.packing = packing;
-
-    // Simulate time
-    res.timeMs = 1.0;
-    if (knapsack == "DP") res.timeMs += items * 2.5;
-    else if (knapsack == "BnB") res.timeMs += items * 1.5;
-    else res.timeMs += items * 0.1;
-
-    if (packing == "EP" || packing == "GA" || packing == "SA") res.timeMs *= 15.0;
-
-    // Simulate Fill Rate
-    res.fillRate = 60.0;
-    if (packing == "FFD" || packing == "BFD") res.fillRate += 15.0;
-    if (packing == "EP") res.fillRate += 20.0;
-    if (packing == "GA") res.fillRate += 25.0;
-    if (packing == "SA") res.fillRate += 22.0;
-    if (knapsack == "DP") res.fillRate += 5.0;
-    
-    if (res.fillRate > 98.5) res.fillRate = 98.5;
-
-    // Simulate Value
-    double valRatio = 0.5;
-    if (knapsack == "DP") valRatio = 0.95;
-    else if (knapsack == "BnB") valRatio = 0.90;
-    else if (knapsack == "Greedy") valRatio = 0.80;
-    if (packing == "GA" || packing == "SA") valRatio = 0.85;
-
-    res.totalValue = baseValue * valRatio;
-
-    return res;
-}
-
 int main() {
     cout << "===============================================\n";
-    cout << "  C++ BENCHMARK ENGINE                         \n";
+    cout << "  C++ REAL BENCHMARK ENGINE (ACTUAL ALGORITHMS)\n";
     cout << "===============================================\n";
 
-    vector<string> datasets = {"input_50_items.txt", "input_100_items.txt", "input_500_items.txt"};
-    vector<int> itemCounts = {50, 100, 500};
-    vector<int> baseValues = {15000, 32000, 150000};
+    // Tạo thư mục results nếu chưa có
+    #ifdef _WIN32
+        system("if not exist results mkdir results");
+    #else
+        system("mkdir -p results");
+    #endif
 
-    vector<pair<string, string>> testCases = {
-        {"Greedy", "FF"}, {"Greedy", "FFD"}, {"Greedy", "EP"},
-        {"DP", "BFD"}, {"BnB", "FFD"}, {"None", "GA"}, {"None", "SA"}
+    vector<string> datasets = {
+        "data/input_50_items.txt", 
+        "data/input_100_items.txt"
+    };
+
+    // Cấu hình các bộ test (Knapsack + Packing)
+    struct TestConfig {
+        string kName;
+        string pName;
+        int kType; // 1: DP, 2: Greedy, 3: BnB
+        Strategy pStrat;
+    };
+
+    vector<TestConfig> configs = {
+        {"Greedy", "FF", 2, FIRST_FIT},
+        {"Greedy", "FFD", 2, FFD},
+        {"DP", "BFD", 1, BFD},
+        {"BnB", "FFD", 3, FFD},
+        {"DP", "EP", 1, EXTREME_POINT}
     };
 
     ofstream csv("results/benchmark_results.csv");
     if (!csv.is_open()) {
-        cerr << "[Loi] Khong the tao file csv (Kiem tra thu muc results/)\n";
+        cerr << "[Loi] Khong the tao file csv trong thu muc results/\n";
         return 1;
     }
 
     csv << "Dataset,Items,Knapsack,Packing,FillRate(%),Time(ms),TotalValue($)\n";
 
-    for (size_t i = 0; i < datasets.size(); ++i) {
-        cout << "\n[+] Dang chay test tren " << datasets[i] << "...\n";
-        for (auto& tc : testCases) {
-            cout << "  -> " << tc.first << " + " << tc.second << "... ";
-            BenchmarkResult r = simulateAlgo(datasets[i], itemCounts[i], tc.first, tc.second, baseValues[i]);
+    for (const auto& dPath : datasets) {
+        cout << "\n[+] Dang chay test tren: " << dPath << "...\n";
+        
+        // Load dữ liệu thật
+        Container baseCont = DatasetLoader::loadContainer(dPath);
+        vector<Item> allItems = DatasetLoader::loadItems(dPath);
+        
+        if (allItems.empty()) {
+            cout << "  [!] Bo qua: File khong ton tai hoac rong.\n";
+            continue;
+        }
+
+        for (const auto& cfg : configs) {
+            cout << "  -> " << cfg.kName << " + " << cfg.pName << "... ";
+
+            auto start = chrono::high_resolution_clock::now();
+
+            // 1. Chạy Knapsack thật
+            vector<Item> selected;
+            if (cfg.kType == 1) selected = solveKnapsackDP(allItems, baseCont.maxWeight);
+            else if (cfg.kType == 2) selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
+            else selected = solveKnapsackBranchAndBound(allItems, baseCont.maxWeight);
+
+            // 2. Chạy Packing thật
+            vector<Container> packed = solveBasicPacking(selected, baseCont, cfg.pStrat);
             
-            csv << r.dataset << "," << r.items << "," << r.knapsack << "," 
-                << r.packing << "," << r.fillRate << "," << r.timeMs << "," << r.totalValue << "\n";
+            auto end = chrono::high_resolution_clock::now();
+            double duration = chrono::duration<double, milli>(end - start).count();
+
+            // 3. Tính toán kết quả thực tế
+            double fillRate = 0;
+            long long totalVal = 0;
+            if (!packed.empty()) {
+                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
+                for(const auto& item : packed[0].packedItems) totalVal += item.value;
+            }
+
+            csv << dPath << "," << allItems.size() << "," << cfg.kName << "," 
+                << cfg.pName << "," << fixed << setprecision(2) << fillRate << "," 
+                << duration << "," << totalVal << "\n";
                 
-            cout << "Xong (" << r.timeMs << " ms)\n";
+            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
         }
     }
 
