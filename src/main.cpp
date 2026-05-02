@@ -34,6 +34,50 @@ void exportResult(const Container& container, const string& filename) {
     cout << "Ti le lap day: " << fixed << setprecision(2) << fillRate << "%\n";
 }
 
+void exportJSON(const Container& container, const string& algoName, const string& filename) {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "[Loi] Khong the ghi file JSON tai: " << filename << endl;
+        return;
+    }
+
+    double fillRate = (double)container.getUsedVolume() / container.getMaxVolume() * 100;
+    
+    file << "{\n";
+    file << "  \"algorithm\": \"" << (algoName.empty() ? "Unknown" : algoName) << "\",\n";
+    file << "  \"fill_rate\": " << fixed << setprecision(2) << fillRate << ",\n";
+    file << "  \"container\": {\n";
+    file << "    \"width\": " << container.width << ",\n";
+    file << "    \"height\": " << container.height << ",\n";
+    file << "    \"depth\": " << container.depth << "\n";
+    file << "  },\n";
+    file << "  \"items\": [\n";
+
+    string colors[] = {"#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"};
+    
+    for (size_t i = 0; i < container.packedItems.size(); ++i) {
+        const auto& item = container.packedItems[i];
+        // Xử lý ID âm để tránh lỗi index mảng màu
+        int colorIdx = (item.id % 7 + 7) % 7;
+        
+        file << "    {\n";
+        file << "      \"id\": " << item.id << ",\n";
+        file << "      \"x\": " << item.x << ",\n";
+        file << "      \"y\": " << item.y << ",\n";
+        file << "      \"z\": " << item.z << ",\n";
+        file << "      \"w\": " << item.width << ",\n";
+        file << "      \"h\": " << item.height << ",\n";
+        file << "      \"d\": " << item.depth << ",\n";
+        file << "      \"color\": \"" << colors[colorIdx] << "\"\n";
+        file << "    }" << (i + 1 == container.packedItems.size() ? "" : ",") << "\n";
+    }
+
+    file << "  ]\n";
+    file << "}\n";
+    file.close();
+    cout << "[+] Da xuat file JSON mo phong tai: " << filename << endl;
+}
+
 int main() {
     cout << "===============================================\n";
     cout << "       DO AN: TOI UU HOA XEP HANG CONTAINER    \n";
@@ -103,8 +147,18 @@ int main() {
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed = end - start;
 
+    string algoName = "Unknown";
+    if (choiceP == 1) algoName = "First Fit";
+    else if (choiceP == 2) algoName = "Best Fit";
+    else if (choiceP == 3) algoName = "First Fit Decreasing";
+    else if (choiceP == 4) algoName = "Best Fit Decreasing";
+    else if (choiceP == 5) algoName = "Extreme Points";
+    else if (choiceP == 6) algoName = "Genetic Algorithm";
+    else if (choiceP == 7) algoName = "Simulated Annealing";
+
     if (!result.empty()) {
         exportResult(result[0], "data/output_result.txt");
+        exportJSON(result[0], algoName, "data/output_3d.json");
     }
 
     cout << "Thoi gian thuc hien: " << fixed << setprecision(4) << elapsed.count() << " giay.\n";

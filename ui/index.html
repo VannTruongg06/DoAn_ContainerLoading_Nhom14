@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng 3D Container - Nhóm 14</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js và OrbitControls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a202c; }
+        #canvas-container { width: 100%; height: 100vh; }
+    </style>
+</head>
+<body class="flex">
+
+    <!-- Sidebar -->
+    <aside class="w-80 bg-gray-900 text-white h-screen p-6 flex flex-col shadow-xl z-10">
+        <h1 class="text-2xl font-bold mb-6 text-blue-400">3D Simulation</h1>
+        
+        <!-- Upload File -->
+        <div class="mb-8">
+            <label class="block text-sm font-medium mb-2">Tải file kết quả (JSON):</label>
+            <input type="file" id="fileInput" accept=".json" 
+                class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+        </div>
+
+        <!-- Thông số hiển thị -->
+        <div class="space-y-4 flex-grow">
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <p class="text-gray-400 text-xs uppercase tracking-wider">Thuật toán</p>
+                <p id="info-algo" class="text-lg font-semibold text-white">--</p>
+            </div>
+            
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <p class="text-gray-400 text-xs uppercase tracking-wider">Kích thước Container</p>
+                <p id="info-size" class="text-lg font-semibold text-white">--</p>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <p class="text-gray-400 text-xs uppercase tracking-wider">Tỷ lệ lấp đầy</p>
+                <p id="info-fill" class="text-2xl font-bold text-green-400">0%</p>
+                <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                    <div id="fill-bar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <p class="text-gray-400 text-xs uppercase tracking-wider">Số lượng kiện hàng</p>
+                <p id="info-count" class="text-lg font-semibold text-white">0</p>
+            </div>
+        </div>
+
+        <!-- Nút Reset -->
+        <button id="resetCamera" class="mt-6 w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition duration-200">
+            Reset Camera
+        </button>
+        
+        <div class="mt-4 text-center text-gray-500 text-xs">
+            © 2026 - PTTKGT Nhóm 14
+        </div>
+    </aside>
+
+    <!-- 3D Viewport -->
+    <main id="canvas-container" class="relative">
+        <!-- Loading overlay (ẩn mặc định) -->
+        <div id="loading" class="hidden absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white z-20">
+            Đang xử lý dữ liệu...
+        </div>
+    </main>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
