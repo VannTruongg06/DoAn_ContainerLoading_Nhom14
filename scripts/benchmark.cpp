@@ -27,10 +27,20 @@ int main() {
         system("mkdir -p results");
     #endif
 
-    vector<string> datasets = {
-        "data/input_50_items.txt", 
-        "data/input_100_items.txt"
-    };
+    vector<string> datasets;
+    ifstream testFile("data/all_tests.txt");
+    if (testFile.is_open()) {
+        string line;
+        while (getline(testFile, line)) {
+            if (!line.empty() && line[0] != '#') {
+                datasets.push_back(line);
+            }
+        }
+        testFile.close();
+    } else {
+        cerr << "[Loi] Khong the mo file data/all_tests.txt\n";
+        return 1;
+    }
 
     // Cấu hình các bộ test (Knapsack + Packing)
     struct TestConfig {
@@ -42,10 +52,14 @@ int main() {
 
     vector<TestConfig> configs = {
         {"Greedy", "FF", 2, FIRST_FIT},
+        {"Greedy", "BF", 2, BEST_FIT},
         {"Greedy", "FFD", 2, FFD},
+        {"Greedy", "BFD", 2, BFD},
+        {"DP", "FFD", 1, FFD},
         {"DP", "BFD", 1, BFD},
+        {"DP", "EP", 1, EXTREME_POINT},
         {"BnB", "FFD", 3, FFD},
-        {"DP", "EP", 1, EXTREME_POINT}
+        {"BnB", "EP", 3, EXTREME_POINT}
     };
 
     ofstream csv("results/benchmark_results.csv");
@@ -68,7 +82,16 @@ int main() {
             continue;
         }
 
+        int numItems = (int)allItems.size();
+
+        // --- Chạy các tổ hợp Knapsack + Packing ---
         for (const auto& cfg : configs) {
+            // Bỏ qua BnB trên dataset lớn (>200 items) vì thời gian chạy quá lâu
+            if (cfg.kType == 3 && numItems > 200) {
+                cout << "  -> " << cfg.kName << " + " << cfg.pName << "... SKIP (>200 items)\n";
+                continue;
+            }
+
             cout << "  -> " << cfg.kName << " + " << cfg.pName << "... ";
 
             auto start = chrono::high_resolution_clock::now();
@@ -93,10 +116,48 @@ int main() {
                 for(const auto& item : packed[0].packedItems) totalVal += item.value;
             }
 
-            csv << dPath << "," << allItems.size() << "," << cfg.kName << "," 
+            csv << dPath << "," << numItems << "," << cfg.kName << "," 
                 << cfg.pName << "," << fixed << setprecision(2) << fillRate << "," 
                 << duration << "," << totalVal << "\n";
                 
+            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
+        }
+
+        // --- Chạy Meta-heuristics: Genetic Algorithm ---
+        {
+            cout << "  -> GA (Genetic Algorithm)... ";
+            auto start = chrono::high_resolution_clock::now();
+            vector<Container> packed = solveGeneticAlgorithm(allItems, baseCont);
+            auto end = chrono::high_resolution_clock::now();
+            double duration = chrono::duration<double, milli>(end - start).count();
+
+            double fillRate = 0;
+            long long totalVal = 0;
+            if (!packed.empty()) {
+                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
+                for(const auto& item : packed[0].packedItems) totalVal += item.value;
+            }
+            csv << dPath << "," << numItems << ",GA,GA," << fixed << setprecision(2) 
+                << fillRate << "," << duration << "," << totalVal << "\n";
+            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
+        }
+
+        // --- Chạy Meta-heuristics: Simulated Annealing ---
+        {
+            cout << "  -> SA (Simulated Annealing)... ";
+            auto start = chrono::high_resolution_clock::now();
+            vector<Container> packed = solveSimulatedAnnealing(allItems, baseCont);
+            auto end = chrono::high_resolution_clock::now();
+            double duration = chrono::duration<double, milli>(end - start).count();
+
+            double fillRate = 0;
+            long long totalVal = 0;
+            if (!packed.empty()) {
+                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
+                for(const auto& item : packed[0].packedItems) totalVal += item.value;
+            }
+            csv << dPath << "," << numItems << ",SA,SA," << fixed << setprecision(2) 
+                << fillRate << "," << duration << "," << totalVal << "\n";
             cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
         }
     }

@@ -14,66 +14,25 @@ struct GeneratedItem {
     int value;
 };
 
-// Hàm sinh 1 kiện hàng
-GeneratedItem generateItem(int id, mt19937& rng) {
-    GeneratedItem item;
-    item.id = id;
-
-    // Kích thước (5 - 50 cm) luôn nhỏ hơn thùng (100cm)
-    uniform_int_distribution<int> dist_size(5, 50);
-    item.w = dist_size(rng);
-    item.h = dist_size(rng);
-    item.d = dist_size(rng);
-
-    // Tính thể tích & khối lượng
-    long long volume = item.w * item.h * item.d;
-    uniform_real_distribution<double> dist_density(0.002, 0.008);
-    int weight = max(1, (int)(volume * dist_density(rng)));
-    item.weight = min(weight, 80); // Tối đa 80kg/kiện
-
-    // Tính giá trị (Có tỉ lệ premium để Knapsack phân loại hàng xịn)
-    int base_value = item.weight * (rng() % 18 + 8); // x8 đến x25
-    int premium_factors[] = {1, 1, 2, 3}; // 50% cơ hội nhân giá trị
-    int premium = premium_factors[rng() % 4];
-    item.value = max(10, base_value * premium);
-
-    return item;
-}
-
-// Hàm ghi file
-void writeDataset(const string& filename, const string& label, int numItems, mt19937& rng) {
+// Hàm ghi file theo chuẩn mới
+void writeDataset(const string& filename, int c_w, int c_h, int c_d, int maxWeight, const vector<GeneratedItem>& items) {
     ofstream file(filename);
     if (!file.is_open()) {
         cerr << "Loi tao file: " << filename << endl;
         return;
     }
 
-    // Ghi Header
-    file << "# ContainerLoading Dataset - " << label << "\n";
-    file << "# Container: 100x100x100 cm  MaxWeight: 500\n";
-    file << "# Items: " << numItems << "\n";
-    file << "# Columns: ID  Width  Height  Depth  Weight  Value\n";
-    file << "#-------------------------------------------------------\n";
+    file << "# Container_Width Container_Height Container_Depth Max_Weight\n";
+    file << c_w << " " << c_h << " " << c_d << " " << maxWeight << "\n";
+    file << "# ID Width Height Depth Weight Value\n";
 
-    // Ghi Data
-    long long total_vol = 0;
-    int total_weight = 0;
-    long long total_value = 0;
-
-    for (int i = 1; i <= numItems; ++i) {
-        GeneratedItem item = generateItem(i, rng);
-        file << item.id << "\t" << item.w << "\t" << item.h << "\t" 
-             << item.d << "\t" << item.weight << "\t" << item.value << "\n";
-        
-        total_vol += (item.w * item.h * item.d);
-        total_weight += item.weight;
-        total_value += item.value;
+    for (const auto& item : items) {
+        file << item.id << " " << item.w << " " << item.h << " " 
+             << item.d << " " << item.weight << " " << item.value << "\n";
     }
 
     file.close();
-    cout << "  [+] Da tao file: " << filename << " (" << label << ")\n";
-    cout << "      Tong the tich: " << total_vol << " cm3, Tong Khoi luong: " 
-         << total_weight << " kg, Tong Gia tri: $" << total_value << "\n\n";
+    cout << "  [+] Da tao file: " << filename << "\n";
 }
 
 int main() {
@@ -81,21 +40,100 @@ int main() {
     cout << "      DATA GENERATOR (C++ VERSION)             \n";
     cout << "===============================================\n\n";
 
-    // Tạo thư mục data nếu chưa có
+    // Tạo các thư mục
     #ifdef _WIN32
-        system("if not exist data mkdir data");
+        system("if not exist data\\random mkdir data\\random");
+        system("if not exist data\\scenarios mkdir data\\scenarios");
+        system("if not exist data\\edge_cases mkdir data\\edge_cases");
     #else
-        system("mkdir -p data");
+        system("mkdir -p data/random data/scenarios data/edge_cases");
     #endif
 
     random_device rd;
     mt19937 rng(rd());
 
-    string dir = "data/";
-    
-    writeDataset(dir + "input_50_items.txt", "Easy (50 items)", 50, rng);
-    writeDataset(dir + "input_100_items.txt", "Medium (100 items)", 100, rng);
-    writeDataset(dir + "input_500_items.txt", "Hard (500 items)", 500, rng);
+    int C_W = 100, C_H = 100, C_D = 200, MAX_W = 5000;
+
+    // 1. Data/random (50, 100, 500 items)
+    for (int num : {50, 100, 500}) {
+        vector<GeneratedItem> items;
+        uniform_int_distribution<int> dist_size(5, 50);
+        uniform_real_distribution<double> dist_density(0.002, 0.008);
+        for (int i = 1; i <= num; ++i) {
+            GeneratedItem item;
+            item.id = i;
+            item.w = dist_size(rng);
+            item.h = dist_size(rng);
+            item.d = dist_size(rng);
+            long long volume = item.w * item.h * item.d;
+            item.weight = max(1, (int)(volume * dist_density(rng)));
+            item.value = item.weight * (rng() % 10 + 5);
+            items.push_back(item);
+        }
+        writeDataset("data/random/input_" + to_string(num) + "_items.txt", C_W, C_H, C_D, MAX_W, items);
+    }
+
+    // 2. Scenarios
+    // Uniform (Dễ nhất cho thuật toán): Các kiện hàng có kích thước gần bằng nhau.
+    {
+        vector<GeneratedItem> items;
+        uniform_int_distribution<int> dist_size(15, 20); // Gần bằng nhau
+        for (int i = 1; i <= 100; ++i) {
+            GeneratedItem item = {i, dist_size(rng), dist_size(rng), dist_size(rng), 15, 100};
+            items.push_back(item);
+        }
+        writeDataset("data/scenarios/uniform.txt", C_W, C_H, C_D, MAX_W, items);
+    }
+
+    // Diverse (Thử thách khả năng lấp đầy khe hở): Kích thước lệch nhau nhiều (to - nhỏ).
+    {
+        vector<GeneratedItem> items;
+        uniform_int_distribution<int> dist_small(5, 12);
+        uniform_int_distribution<int> dist_large(40, 70);
+        for (int i = 1; i <= 100; ++i) {
+            bool is_large = (rng() % 5 == 0); // 20% large
+            int size_w = is_large ? dist_large(rng) : dist_small(rng);
+            int size_h = is_large ? dist_large(rng) : dist_small(rng);
+            int size_d = is_large ? dist_large(rng) : dist_small(rng);
+            GeneratedItem item = {i, size_w, size_h, size_d, (int)(size_w * size_h * size_d * 0.005) + 1, 100};
+            items.push_back(item);
+        }
+        writeDataset("data/scenarios/diverse.txt", C_W, C_H, C_D, MAX_W, items);
+    }
+
+    // Weight-Heavy (Nặng nhưng nhỏ): Hết tải trọng trước khi hết chỗ.
+    {
+        vector<GeneratedItem> items;
+        uniform_int_distribution<int> dist_size(10, 15); // Nhỏ
+        for (int i = 1; i <= 80; ++i) {
+            GeneratedItem item = {i, dist_size(rng), dist_size(rng), dist_size(rng), 150, 400}; // Nặng (150kg/món)
+            items.push_back(item);
+        }
+        writeDataset("data/scenarios/weight_heavy.txt", C_W, C_H, C_D, MAX_W, items);
+    }
+
+    // Voluminous (Cồng kềnh nhưng nhẹ): Hết chỗ trước khi hết tải trọng.
+    {
+        vector<GeneratedItem> items;
+        uniform_int_distribution<int> dist_size(40, 75); // Cồng kềnh
+        for (int i = 1; i <= 40; ++i) {
+            GeneratedItem item = {i, dist_size(rng), dist_size(rng), dist_size(rng), 5, 20}; // Rất nhẹ (5kg/món)
+            items.push_back(item);
+        }
+        writeDataset("data/scenarios/voluminous.txt", C_W, C_H, C_D, MAX_W, items);
+    }
+
+    // 3. Edge Cases
+    {
+        vector<GeneratedItem> items;
+        // Quá khổ
+        items.push_back({1, 300, 50, 50, 100, 100}); 
+        // Khối lượng âm
+        items.push_back({2, 20, 20, 20, -50, 100});
+        // Bình thường
+        items.push_back({3, 30, 30, 30, 10, 50});
+        writeDataset("data/edge_cases/dirty_data.txt", C_W, C_H, C_D, MAX_W, items);
+    }
 
     cout << "=> HOAN THANH! Cac file da nam trong thu muc data/\n";
     cout << "===============================================\n";

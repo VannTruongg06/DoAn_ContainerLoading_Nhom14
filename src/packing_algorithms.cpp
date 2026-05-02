@@ -1,191 +1,212 @@
 #include "packing_algorithms.h"
+
 #include <algorithm>
+#include <iostream>
 #include <limits>
 
 using namespace std;
 
-// Cập nhật danh sách điểm cực trị (Extreme Points) sau khi đặt 1 item
-void updateExtremePoints(vector<Point3D> &ep, const Item &item, const Container &cont)
-{
-    // Xóa các EP nằm bên trong item vừa đặt
-    ep.erase(remove_if(ep.begin(), ep.end(), [&](const Point3D &p)
-                       { return (p.x >= item.x && p.x < item.x + item.width &&
-                                 p.y >= item.y && p.y < item.y + item.height &&
-                                 p.z >= item.z && p.z < item.z + item.depth); }),
-             ep.end());
+namespace {
 
-    // Thêm 3 điểm mới tạo ra bởi item (Max X, Max Y, Max Z)
-    if (item.x + item.width < cont.width)
-        ep.emplace_back(item.x + item.width, item.y, item.z);
-    if (item.y + item.height < cont.height)
-        ep.emplace_back(item.x, item.y + item.height, item.z);
-    if (item.z + item.depth < cont.depth)
-        ep.emplace_back(item.x, item.y, item.z + item.depth);
+constexpr int kSearchStep = 5;
 
-    // Loại bỏ các EP trùng lặp (đơn giản hóa)
-    // Thực tế EPH cần chiếu điểm xuống (Project points) để tối ưu, đây là bản cơ bản
+bool canFitInBounds(const Item& item, const Container& cont, int x, int y, int z) {
+    return x >= 0 && y >= 0 && z >= 0 &&
+           x + item.width <= cont.width &&
+           y + item.height <= cont.height &&
+           z + item.depth <= cont.depth;
 }
 
-// 4-8. Hàm giải quyết bài toán xếp hàng với các chiến lược khác nhau
-vector<Container> solveBasicPacking(vector<Item> items, Container baseCont, Strategy strat)
-{
+bool hasOverlapAt(const Item& candidate, const Container& cont) {
+    for (const auto& pi : cont.packedItems) {
+        if (isOverlap(candidate, pi)) return true;
+    }
+    return false;
+}
+
+bool canPlaceAt(Item& candidate, const Container& cont, int x, int y, int z) {
+    if (!canFitInBounds(candidate, cont, x, y, z)) return false;
+    candidate.x = x;
+    candidate.y = y;
+    candidate.z = z;
+    return !hasOverlapAt(candidate, cont);
+}
+
+bool tryPlaceFirstFitWithRotation(const Item& src, Container& cont, Item& placed) {
+    for (int rot = 0; rot < 6; ++rot) {
+        Item candidate = src;
+        candidate.rotate(rot);
+
+        for (int z = 0; z <= cont.depth - candidate.depth; z += kSearchStep) {
+            for (int y = 0; y <= cont.height - candidate.height; y += kSearchStep) {
+                for (int x = 0; x <= cont.width - candidate.width; x += kSearchStep) {
+                    if (canPlaceAt(candidate, cont, x, y, z)) {
+                        candidate.isPacked = true;
+                        placed = candidate;
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool tryPlaceBestFitWithRotation(const Item& src, Container& cont, Item& placed) {
+    int bestResidual = numeric_limits<int>::max();
+    bool found = false;
+    Item bestCandidate = src;
+
+    for (int rot = 0; rot < 6; ++rot) {
+        Item candidate = src;
+        candidate.rotate(rot);
+
+        for (int z = 0; z <= cont.depth - candidate.depth; z += kSearchStep) {
+            for (int y = 0; y <= cont.height - candidate.height; y += kSearchStep) {
+                for (int x = 0; x <= cont.width - candidate.width; x += kSearchStep) {
+                    if (!canPlaceAt(candidate, cont, x, y, z)) continue;
+
+                    int residual = (cont.width - x - candidate.width) +
+                                   (cont.height - y - candidate.height) +
+                                   (cont.depth - z - candidate.depth);
+                    if (residual < bestResidual) {
+                        bestResidual = residual;
+                        bestCandidate = candidate;
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!found) return false;
+    bestCandidate.isPacked = true;
+    placed = bestCandidate;
+    return true;
+}
+
+bool tryPlaceExtremePointWithRotation(const Item& src, Container& cont, Item& placed);
+
+} // namespace
+
+// Cap nhat danh sach diem cuc tri (Extreme Points) sau khi dat 1 item
+void updateExtremePoints(vector<Point3D>& ep, const Item& item, const Container& cont) {
+    ep.erase(remove_if(ep.begin(), ep.end(), [&](const Point3D& p) {
+        return (p.x >= item.x && p.x < item.x + item.width &&
+                p.y >= item.y && p.y < item.y + item.height &&
+                p.z >= item.z && p.z < item.z + item.depth);
+    }), ep.end());
+
+    if (item.x + item.width < cont.width) ep.emplace_back(item.x + item.width, item.y, item.z);
+    if (item.y + item.height < cont.height) ep.emplace_back(item.x, item.y + item.height, item.z);
+    if (item.z + item.depth < cont.depth) ep.emplace_back(item.x, item.y, item.z + item.depth);
+}
+
+namespace {
+
+bool tryPlaceExtremePointWithRotation(const Item& src, Container& cont, Item& placed) {
+    vector<Point3D> ep;
+    if (cont.packedItems.empty()) {
+        ep.emplace_back(0, 0, 0);
+    } else {
+        ep.emplace_back(0, 0, 0);
+        for (const auto& pi : cont.packedItems) updateExtremePoints(ep, pi, cont);
+    }
+
+    int bestResidual = numeric_limits<int>::max();
+    bool found = false;
+    Item bestCandidate = src;
+
+    for (const auto& p : ep) {
+        for (int rot = 0; rot < 6; ++rot) {
+            Item candidate = src;
+            candidate.rotate(rot);
+
+            if (!canPlaceAt(candidate, cont, p.x, p.y, p.z)) continue;
+
+            int residual = (cont.width - (p.x + candidate.width)) +
+                           (cont.height - (p.y + candidate.height)) +
+                           (cont.depth - (p.z + candidate.depth));
+            if (residual < bestResidual) {
+                bestResidual = residual;
+                bestCandidate = candidate;
+                found = true;
+            }
+        }
+    }
+
+    if (!found) return false;
+    bestCandidate.isPacked = true;
+    placed = bestCandidate;
+    return true;
+}
+
+bool tryPlaceInEmptyContainer(const Item& src, Container& cont, Item& placed) {
+    for (int rot = 0; rot < 6; ++rot) {
+        Item candidate = src;
+        candidate.rotate(rot);
+        if (!canFitInBounds(candidate, cont, 0, 0, 0)) continue;
+        candidate.x = 0;
+        candidate.y = 0;
+        candidate.z = 0;
+        candidate.isPacked = true;
+        placed = candidate;
+        return true;
+    }
+    return false;
+}
+
+} // namespace
+
+// 4-8. Ham giai quyet bai toan xep hang voi cac chien luoc khac nhau
+vector<Container> solveBasicPacking(vector<Item> items, Container baseCont, Strategy strat) {
     vector<Container> result;
 
-    // Xử lý tiền sắp xếp cho FFD, BFD
-    if (strat == FFD || strat == BFD)
-    {
-        sort(items.begin(), items.end(), [](const Item &a, const Item &b)
-             { return a.getVolume() > b.getVolume(); });
+    if (strat == FFD || strat == BFD) {
+        sort(items.begin(), items.end(), [](const Item& a, const Item& b) {
+            return a.getVolume() > b.getVolume();
+        });
     }
 
-    // Khởi tạo container đầu tiên
     result.push_back(baseCont);
 
-    for (auto &item : items)
-    {
+    for (const auto& srcItem : items) {
         bool placed = false;
 
-        for (auto &cont : result)
-        {
-            if (cont.getCurrentWeight() + item.weight > cont.maxWeight)
-                continue;
+        for (auto& cont : result) {
+            if (cont.getCurrentWeight() + srcItem.weight > cont.maxWeight) continue;
 
-            if (strat == EXTREME_POINT)
-            {
-                // EXTREME POINT STRATEGY
-                vector<Point3D> ep;
-                if (cont.packedItems.empty())
-                    ep.emplace_back(0, 0, 0);
-                else
-                {
-                    // Tái tạo lại EP list (Mô phỏng)
-                    ep.emplace_back(0, 0, 0);
-                    for (const auto &pi : cont.packedItems)
-                        updateExtremePoints(ep, pi, cont);
-                }
+            Item placedItem = srcItem;
+            bool ok = false;
 
-                int bestVol = numeric_limits<int>::max();
-                Point3D bestPoint(-1, -1, -1);
-
-                for (const auto &p : ep)
-                {
-                    if (p.x + item.width <= cont.width && p.y + item.height <= cont.height && p.z + item.depth <= cont.depth)
-                    {
-                        item.x = p.x;
-                        item.y = p.y;
-                        item.z = p.z;
-                        bool overlap = false;
-                        for (const auto &pi : cont.packedItems)
-                        {
-                            if (isOverlap(item, pi))
-                            {
-                                overlap = true;
-                                break;
-                            }
-                        }
-                        if (!overlap)
-                        {
-                            // Cải tiến: Chọn điểm tạo ra ít khoảng trống nhất (tương tự Best Fit trên tập EP)
-                            int remainingSpace = (cont.width - (p.x + item.width)) + (cont.height - (p.y + item.height)) + (cont.depth - (p.z + item.depth));
-                            if (remainingSpace < bestVol)
-                            {
-                                bestVol = remainingSpace;
-                                bestPoint = p;
-                            }
-                        }
-                    }
-                }
-
-                if (bestPoint.x != -1)
-                {
-                    item.x = bestPoint.x;
-                    item.y = bestPoint.y;
-                    item.z = bestPoint.z;
-                    item.isPacked = true;
-                    cont.packedItems.push_back(item);
-                    placed = true;
-                    break;
-                }
+            if (strat == EXTREME_POINT) {
+                ok = tryPlaceExtremePointWithRotation(srcItem, cont, placedItem);
+            } else if (strat == FIRST_FIT || strat == FFD) {
+                ok = tryPlaceFirstFitWithRotation(srcItem, cont, placedItem);
+            } else {
+                ok = tryPlaceBestFitWithRotation(srcItem, cont, placedItem);
             }
-            else
-            {
 
-                // FIRST FIT & BEST FIT STRATEGIES (Duyệt theo tọa độ cơ bản)
-                int best_x = -1, best_y = -1, best_z = -1;
-                int min_residual = numeric_limits<int>::max();
-
-                // Tối ưu: Chỉ duyệt các tọa độ có khả năng đặt hàng (giảm số lần lặp)
-                for (int z = 0; z <= cont.depth - item.depth && !placed; z += 5)
-                {
-                    for (int y = 0; y <= cont.height - item.height && !placed; y += 5)
-                    {
-                        for (int x = 0; x <= cont.width - item.width && !placed; x += 5)
-                        {
-                            item.x = x;
-                            item.y = y;
-                            item.z = z;
-                            bool overlap = false;
-                            for (const auto &pi : cont.packedItems)
-                            {
-                                if (isOverlap(item, pi))
-                                {
-                                    overlap = true;
-                                    // Tối ưu: Bỏ qua vùng bị overlap bởi vật phẩm pi
-                                    x = pi.x + pi.width - 1;
-                                    break;
-                                }
-                            }
-
-                            if (!overlap)
-                            {
-                                if (strat == FIRST_FIT || strat == FFD)
-                                {
-                                    item.isPacked = true;
-                                    cont.packedItems.push_back(item);
-                                    placed = true;
-                                }
-                                else if (strat == BEST_FIT || strat == BFD)
-                                {
-                                    int residual = (cont.width - x - item.width) + (cont.height - y - item.height) + (cont.depth - z - item.depth);
-                                    if (residual < min_residual)
-                                    {
-                                        min_residual = residual;
-                                        best_x = x;
-                                        best_y = y;
-                                        best_z = z;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if ((strat == BEST_FIT || strat == BFD) && best_x != -1)
-                {
-                    item.x = best_x;
-                    item.y = best_y;
-                    item.z = best_z;
-                    item.isPacked = true;
-                    cont.packedItems.push_back(item);
-                    placed = true;
-                    break; // Đã xếp vào container hiện tại
-                }
+            if (ok) {
+                cont.packedItems.push_back(placedItem);
+                placed = true;
+                break;
             }
-            if (placed)
-                break; // Chuyển sang item tiếp theo
         }
 
-        // Nếu không xếp được vào các container hiện có, tạo container mới
-        if (!placed)
-        {
+        if (!placed) {
             Container newCont = baseCont;
-            item.x = 0;
-            item.y = 0;
-            item.z = 0;
-            item.isPacked = true;
-            newCont.packedItems.push_back(item);
-            result.push_back(newCont);
+            Item placedItem = srcItem;
+
+            if (tryPlaceInEmptyContainer(srcItem, newCont, placedItem)) {
+                newCont.packedItems.push_back(placedItem);
+                result.push_back(newCont);
+            } else {
+                cerr << "[Packing] Bo qua item ID " << srcItem.id
+                     << " vi khong the dat vao container moi (ke ca khi da xoay).\n";
+            }
         }
     }
+
     return result;
 }

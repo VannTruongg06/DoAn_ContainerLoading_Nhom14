@@ -6,7 +6,6 @@
 
 using namespace std;
 
-// Các loại thùng chuẩn ESICUP
 struct EsicupContainer {
     int w, h, d, maxW;
     string name;
@@ -21,28 +20,25 @@ void generateEsicupDemo() {
         {235, 239, 1203, 30000, "40ft"}
     };
 
-    string dir = "data/esicup/";
+    string dir = "data/academic/esicup/";
     
     for (int i = 1; i <= 3; ++i) {
         EsicupContainer cont = containers[rng() % 2];
         
-        uniform_int_distribution<int> dist_items(200, 800); // ESICUP thường rất nhiều items
+        uniform_int_distribution<int> dist_items(200, 800);
         int num_items = dist_items(rng);
 
         string filename = dir + "esicup_inst_" + to_string(i) + ".txt";
         ofstream file(filename);
         
         if (!file.is_open()) {
-            cerr << "[Loi] Khong the tao file: " << filename << " (Ban da tao thu muc data/esicup/ chua?)\n";
+            cerr << "[Loi] Khong the tao file: " << filename << "\n";
             continue;
         }
 
-        // Header
-        file << "# ESICUP 2015 Simulated Instance " << i << "\n";
-        file << "# Container: " << cont.name << " (" << cont.w << "x" << cont.h << "x" << cont.d << " cm) MaxWeight: " << cont.maxW << " kg\n";
-        file << "# Items: " << num_items << "\n";
-        file << "# Columns: ID  Width  Height  Depth  Weight  Value\n";
-        file << "#-------------------------------------------------------\n";
+        file << "# Container_Width Container_Height Container_Depth Max_Weight\n";
+        file << cont.w << " " << cont.h << " " << cont.d << " " << cont.maxW << "\n";
+        file << "# ID Width Height Depth Weight Value\n";
 
         uniform_int_distribution<int> dist_size(10, 60);
         uniform_int_distribution<int> dist_wgt(1, 20);
@@ -54,7 +50,7 @@ void generateEsicupDemo() {
             int weight = dist_wgt(rng);
             int value = weight * (rng() % 11 + 5);
 
-            file << j << "\t" << w << "\t" << h << "\t" << d << "\t" << weight << "\t" << value << "\n";
+            file << j << " " << w << " " << h << " " << d << " " << weight << " " << value << "\n";
         }
 
         file.close();
@@ -67,11 +63,19 @@ int main() {
     cout << "  ESICUP MULTI-CONTAINER DATASET PARSER (C++)  \n";
     cout << "===============================================\n";
     
-    cout << "[-] Dang chay che do DEMO (gia lap file ESICUP)\n";
+    #ifdef _WIN32
+        system("if not exist data\\academic\\esicup mkdir data\\academic\\esicup");
+    #else
+        system("mkdir -p data/academic/esicup");
+    #endif
+
+    cout << "[-] Nguon du lieu: ESICUP (Euro Special Interest Group on Cutting and Packing)\n";
+    cout << "[-] Link: https://www.esicup.org/\n";
+    cout << "[-] Dang chay che do DEMO (Gia lap cac thung Container 20ft/40ft chuan)\n";
     generateEsicupDemo();
     
     cout << "\n===============================================\n";
-    cout << "  DONE! Du lieu da luu vao thu muc data/esicup/\n";
+    cout << "  DONE! Du lieu da luu vao thu muc data/academic/esicup/\n";
     cout << "===============================================\n";
     
     return 0;

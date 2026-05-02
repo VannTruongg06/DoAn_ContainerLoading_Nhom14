@@ -1,0 +1,35 @@
+# C++ compilation artifacts
+*.exe
+*.o
+*.obj
+*.pdb
+*.ilk
+.vscode/
+
+# Python artifacts (if any used for plotting)
+__pycache__/
+*.pyc
+temp_plot.py
+
+# Generated Data & Results
+# Keep the directory structure but ignore generated files inside
+data/random/*.txt
+data/scenarios/*.txt
+data/edge_cases/*.txt
+data/academic/bedbpp/*.txt
+data/academic/esicup/*.txt
+data/academic/orlib/*.txt
+results/plots/*.png
+results/*.csv
+data/output_result.txt
+
+# Do not ignore READMEs or all_tests.txt
+!data/README.md
+!data/all_tests.txt
+!results/README.md
+
+*.exe
+*.o
+*.obj
+results/benchmark_results.csv
+data/output_result.txt
