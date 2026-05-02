@@ -1,87 +1,78 @@
-# Đồ Án Container Loading - Nhóm 14
+# 📦 TỐI ƯU HÓA XẾP HÀNG CONTAINER 3D (NHÓM 14)
 
-Dự án giải quyết bài toán tối ưu hóa không gian xếp hàng vào Container 3D sử dụng các thuật toán: Quy hoạch động (DP), Tham lam (Greedy), Nhánh cận (Branch and Bound), Heuristics (First Fit, Best Fit, Extreme Points), và Meta-heuristics (Genetic Algorithm, Simulated Annealing).
-
----
-
-## 📂 Cấu trúc thư mục
-
-- `src/`: Chứa mã nguồn thuật toán lõi **C++** (Dành cho TV2 & TV3).
-  - Gồm các file lõi: `models.h`, `dataset_loader.h`, `knapsack_algorithms.cpp`, v.v.
-- `scripts/`: Chứa mã nguồn **C++** xử lý Data Pipeline và Benchmarking (Dành cho TV1 & TV4).
-  - Tự động hóa sinh dữ liệu, cào dữ liệu, đo lường và vẽ biểu đồ.
-- `data/`: Chứa các bộ dữ liệu Test (Dễ, TB, Khó) và các dataset thực tế.
-- `results/`: Chứa file `csv` kết quả chạy benchmark và các file ảnh `.png` đồ thị báo cáo.
-- `docs/`: Chứa báo cáo Word và slide thuyết trình.
+Dự án giải quyết bài toán **3D Container Loading Problem (3D-CLP)**: Sắp xếp tối ưu các kiện hàng vào thùng chứa sao cho tận dụng tối đa không gian (Fill Rate) và giá trị (Total Value). Kết hợp sức mạnh tính toán của **C++** và khả năng hiển thị trực quan của **Three.js**.
 
 ---
 
-## 🚀 Hướng dẫn quy trình làm việc (FULL C++)
+## ✨ Tính năng nổi bật
 
-### 👨‍💻 Dành cho TV1 (Người làm Dữ liệu)
-Biên dịch và chạy các file `.cpp` trong thư mục `scripts/` để sinh dữ liệu:
-
-1. **Tạo dữ liệu ngẫu nhiên (3 mức độ):**
-   ```bash
-   g++ scripts/generate_data.cpp -o generate_data.exe
-   ./generate_data.exe
-   ```
-   *Kết quả:* Tạo ra 3 file `input_50_items.txt`, `input_100_items.txt`, `input_500_items.txt` trong thư mục `data/`.
-
-2. **Parse các Dataset học thuật & thực tế:**
-   ```bash
-   g++ scripts/parse_orlib.cpp -o parse_orlib.exe
-   ./parse_orlib.exe
-   
-   g++ scripts/parse_bedbpp.cpp -o parse_bedbpp.exe
-   ./parse_bedbpp.exe
-   ```
-
-### 👨‍💻 Dành cho TV2 & TV3 (Người code Thuật toán C++)
-Chúng ta đã có module `DatasetLoader` xử lý phần đọc file.
-
-**Cách dùng trong thuật toán của bạn:**
-```cpp
-#include "dataset_loader.h"
-
-int main() {
-    string path = "data/input_50_items.txt";
-    Container cont = DatasetLoader::loadContainer(path);
-    vector<Item> items = DatasetLoader::loadItems(path);
-}
-```
-
-**Biên dịch toàn bộ dự án cốt lõi:**
-```bash
-g++ src/*.cpp -Isrc -o main.exe
-./main.exe
-```
-
-### 👨‍💻 Dành cho TV4 (Người chạy Benchmark & Làm báo cáo)
-
-1. **Chạy Đo lường (Đánh giá Fill Rate %, Time ms, Total Value $):**
-   ```bash
-   g++ scripts/benchmark.cpp -o benchmark.exe
-   ./benchmark.exe
-   ```
-   *Kết quả:* Sẽ xuất ra file `results/benchmark_results.csv`.
-
-2. **Vẽ Biểu đồ đồ thị:**
-   *(Ghi chú: Lệnh C++ này sẽ gọi hệ thống vẽ biểu đồ)*
-   ```bash
-   g++ scripts/plot_benchmark.cpp -o plot_benchmark.exe
-   ./plot_benchmark.exe
-   ```
-   *Kết quả:* Các ảnh biểu đồ chuyên nghiệp sẽ được xuất ra ở thư mục `results/plots/`.
+- **Thuật toán đa dạng**: Hỗ trợ từ thuật toán tham lam (Greedy), quy hoạch động (DP) đến các giải thuật Meta-heuristic (Di truyền - GA, Luyện kim - SA).
+- **Mô phỏng 3D trực quan**: Giao diện Web hiện đại cho phép xoay, thu phóng và quan sát chi tiết từng kiện hàng trong không gian 3D.
+- **Xử lý hình học chính xác**: Hỗ trợ xoay kiện hàng 6 hướng (6-axis rotation) và kiểm tra va chạm vật lý.
+- **Dữ liệu thực tế**: Tích hợp các bộ dữ liệu chuẩn quốc tế như **BED-BPP**, **OR-Library** và **ESICUP**.
 
 ---
 
-## 🔗 Quản lý Git (Nhánh tính năng)
-Để đẩy toàn bộ bộ Data và Script này lên kho lưu trữ chung, hãy chạy các lệnh sau trong Terminal:
+## 📂 Cấu trúc dự án
 
-```bash
-git checkout -b feature/data-test
-git add data/ scripts/ results/ README.md src/
-git commit -m "Hoan thien Data Pipeline Full C++ theo yeu cau"
-git push -u origin feature/data-test
+```text
+├── src/                # Mã nguồn C++ (Thuật toán lõi)
+│   ├── models.h        # Định nghĩa Item, Container, Space
+│   ├── packing_algorithms.cpp # Chiến lược hình học (FF, BF, EP...)
+│   ├── knapsack_algorithms.cpp # Lọc hàng tối ưu (DP, Greedy, B&B)
+│   └── meta_heuristics.cpp    # Giải thuật GA, SA
+├── ui/                 # Giao diện Web Mô phỏng 3D
+│   ├── index.html      # Giao diện chính (TailwindCSS)
+│   └── script.js       # Logic render 3D (Three.js)
+├── scripts/            # Công cụ hỗ trợ (Data gen, Benchmark, Parsers)
+├── data/               # Dữ liệu đầu vào (.txt) và đầu ra (.json)
+├── results/            # Kết quả phân tích và biểu đồ
+└── build.bat           # File tự động biên dịch
 ```
+
+---
+
+## 🛠 Hướng dẫn cài đặt & Chạy
+
+### 1. Yêu cầu môi trường
+- **C++**: Trình biên dịch `g++` (hỗ trợ C++11 trở lên).
+- **Web**: Trình duyệt hiện đại (Chrome, Edge, Firefox). Nên có extension **Live Server** trên VS Code.
+
+### 2. Biên dịch và Chuẩn bị dữ liệu
+Chạy các file script tự động sau (trên Windows):
+```powershell
+.\build.bat        # Biên dịch toàn bộ file C++ thành .exe
+.\setup_data.bat   # Sinh dữ liệu mẫu và parse dữ liệu thực tế
+```
+
+### 3. Chạy thuật toán C++
+Mở `main.exe`, nhập đường dẫn file dữ liệu và chọn thuật toán:
+- Ví dụ: `data/random/input_100_items.txt`
+- Chương trình sẽ xuất kết quả ra `data/output_3d.json`.
+
+### 4. Xem mô phỏng 3D
+- Mở `ui/index.html` bằng **Live Server**.
+- Nhấn **"Tải file kết quả (JSON)"** và chọn file `data/output_3d.json` vừa tạo.
+
+---
+
+## 🧠 Danh sách thuật toán
+
+| Nhóm | Thuật toán | Đặc điểm |
+| :--- | :--- | :--- |
+| **Knapsack** | DP, Greedy, Branch & Bound | Lọc hàng dựa trên giá trị và tải trọng. |
+| **Packing** | First Fit, Best Fit, FFD, BFD | Xếp hàng vào vị trí trống đầu tiên/tốt nhất. |
+| **Geometry** | Extreme Points (EP) | Tối ưu hóa các điểm cực trị để lấp đầy khe hở. |
+| **Heuristic** | Genetic Algorithm, Simulated Annealing | Tìm kiếm không gian lời giải lớn để tối ưu Fill Rate. |
+
+---
+
+## 📊 Dữ liệu thử nghiệm
+Dự án cung cấp sẵn các kịch bản test:
+- `data/random/`: 50, 100, 500 kiện hàng ngẫu nhiên.
+- `data/scenarios/`: Các trường hợp đặc biệt (Hàng cồng kềnh, hàng siêu nặng).
+- `data/academic/`: Dữ liệu chuẩn từ các kho hàng quốc tế.
+
+---
+**Nhóm 14 - Đồ án Phân tích và Thiết kế Thuật toán**
+

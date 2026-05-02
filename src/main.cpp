@@ -84,7 +84,7 @@ int main() {
     cout << "===============================================\n";
 
     string filepath;
-    cout << "\nNhap duong dan file dataset.\n(vd: data/input_50_items.txt, data/bedbpp/bedbpp_order_demo_1.txt): ";
+    cout << "\nNhap duong dan file dataset.\n(vd: data/random/input_50_items.txt, data/academic/bedbpp/bedbpp_order_...): ";
     cin >> filepath;
 
     // Sử dụng C++ Pro: DatasetLoader chuyên nghiệp để đọc Header tự động
