@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 data/random/input_50_items.txt
 data/random/input_100_items.txt
 data/random/input_200_items.txt
@@ -7,3 +8,20 @@ data/scenarios/uniform.txt
 data/scenarios/diverse.txt
 data/scenarios/weight_heavy.txt
 data/scenarios/voluminous.txt
+=======
+data/academic/esicup/ku_leuven_esicup_A_NSA_BUR_STK_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_A_IND_RIR_STK_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_A_MED_GC_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_A_CVP_GC_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_A_CVU_GC_PEX_container_UT12.txt
+data/academic/esicup/ku_leuven_esicup_B_ACI_RIR_PEX_truck_CA270.txt
+data/academic/esicup/ku_leuven_esicup_B_TAK_RIR_PEX_truck_CA29R.txt
+data/academic/esicup/ku_leuven_esicup_B_AVF_RIR_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_B_AVZ_RIR_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_B_ALG_RIR_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_X_VAX_COR_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_X_CHE_RIR_PEX_container_CT40H.txt
+data/academic/esicup/ku_leuven_esicup_X_BAX_COR_PEX_container_UT12X.txt
+data/academic/esicup/ku_leuven_esicup_X_ARG_BUR_PEX_container_UT12X.txt
+data/academic/esicup/ku_leuven_esicup_X_TNG_RIR_PEX_container_UT12X.txt
+>>>>>>> 2eb3f27 (update dataset esicup)
