@@ -19,7 +19,7 @@ double calculateFitness(const vector<Container>& solution) {
 }
 
 // 9. Giải Thuật Di Truyền (GA)
-vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont) {
+vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont, Strategy strat) {
     int popSize = 20;
     int generations = 50;
     random_device rd;
@@ -40,7 +40,7 @@ vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont) 
 
         // Đánh giá
         for (const auto& indiv : population) {
-            vector<Container> sol = solveBasicPacking(indiv, baseCont, FFD); // Dùng FFD làm bộ giải mã nhanh
+            vector<Container> sol = solveBasicPacking(indiv, baseCont, strat); // Dùng strategy được truyền vào
             double fit = calculateFitness(sol);
             fitnessList.push_back({fit, indiv});
             
@@ -49,6 +49,8 @@ vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont) 
                 bestSolution = sol;
             }
         }
+// ... rest of logic unchanged ...
+
 
         // Chọn lọc & Lai ghép (Crossover PMX đơn giản)
         sort(fitnessList.rbegin(), fitnessList.rend()); // Giảm dần
@@ -84,7 +86,7 @@ vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont) 
 }
 
 // 10. Thuật toán Luyện kim mô phỏng (Simulated Annealing)
-vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont) {
+vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont, Strategy strat) {
     double initialTemp = 1000.0;
     double coolingRate = 0.95;
     double finalTemp = 1.0;
@@ -94,7 +96,7 @@ vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont
 
     // Trạng thái hiện tại
     vector<Item> currentOrder = items;
-    vector<Container> currentSolution = solveBasicPacking(currentOrder, baseCont, FIRST_FIT);
+    vector<Container> currentSolution = solveBasicPacking(currentOrder, baseCont, strat);
     double currentEnergy = -calculateFitness(currentSolution); // Tìm min của Energy (-Fitness)
 
     vector<Item> bestOrder = currentOrder;
@@ -109,7 +111,7 @@ vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont
         int idx2 = rand() % newOrder.size();
         swap(newOrder[idx1], newOrder[idx2]);
 
-        vector<Container> newSolution = solveBasicPacking(newOrder, baseCont, FIRST_FIT);
+        vector<Container> newSolution = solveBasicPacking(newOrder, baseCont, strat);
         double newEnergy = -calculateFitness(newSolution);
 
         // Chấp nhận trạng thái mới?
@@ -129,7 +131,7 @@ vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont
         // Cập nhật Best
         if (currentEnergy < bestEnergy) {
             bestEnergy = currentEnergy;
-            bestSolution = solveBasicPacking(currentOrder, baseCont, FIRST_FIT);
+            bestSolution = solveBasicPacking(currentOrder, baseCont, strat);
         }
 
         // Làm lạnh

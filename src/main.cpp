@@ -145,7 +145,7 @@ int main() {
     }
 
     auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double> elapsed = end - start;
+    double elapsedMs = chrono::duration<double, milli>(end - start).count();
 
     string algoName = "Unknown";
     if (choiceP == 1) algoName = "First Fit";
@@ -156,13 +156,20 @@ int main() {
     else if (choiceP == 6) algoName = "Genetic Algorithm";
     else if (choiceP == 7) algoName = "Simulated Annealing";
 
+    double fillRate = 0;
+    long long totalValue = 0;
     if (!result.empty()) {
+        fillRate = (double)result[0].getUsedVolume() / result[0].getMaxVolume() * 100;
+        for(const auto& item : result[0].packedItems) totalValue += item.value;
         exportResult(result[0], "data/output_result.txt");
         exportJSON(result[0], algoName, "data/output_3d.json");
     }
 
-    cout << "Thoi gian thuc hien: " << fixed << setprecision(4) << elapsed.count() << " giay.\n";
-    cout << "===============================================\n";
+    cout << "\n================ KET QUA CUOI CUNG ================\n";
+    cout << "1. Tong gia tri thu duoc (Total Value): " << totalValue << " $\n";
+    cout << "2. Ty le lap day (Fill Rate): " << fixed << setprecision(2) << fillRate << " %\n";
+    cout << "3. Thoi gian thuc thi (Execution Time): " << fixed << setprecision(2) << elapsedMs << " ms\n";
+    cout << "===================================================\n";
 
     return 0;
 }

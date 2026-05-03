@@ -79,17 +79,23 @@ double bound(Node u, int n, int maxWeight, const vector<Item>& items) {
     return profit_bound;
 }
 
-// 3. Nhánh Cận (Branch and Bound)
+// 3. Nhánh Cận (Branch and Bound) - Best First Search
 vector<Item> solveKnapsackBranchAndBound(const vector<Item>& items_in, int maxWeight) {
     vector<Item> items = items_in;
-    // Sắp xếp giảm dần theo tỷ trọng (tối ưu hóa việc tìm kiếm)
     sort(items.begin(), items.end(), [](const Item& a, const Item& b) {
         return a.getDensity() > b.getDensity();
     });
 
-    queue<Node> Q;
+    struct NodeComparator {
+        bool operator()(const Node& a, const Node& b) const {
+            return a.bound < b.bound;
+        }
+    };
+
+    priority_queue<Node, vector<Node>, NodeComparator> Q;
     Node u, v;
     u.level = -1; u.profit = 0; u.weight = 0;
+    u.bound = bound(u, (int)items.size(), maxWeight, items);
     Q.push(u);
 
     int maxProfit = 0;
@@ -97,29 +103,32 @@ vector<Item> solveKnapsackBranchAndBound(const vector<Item>& items_in, int maxWe
     int n = items.size();
 
     while (!Q.empty()) {
-        u = Q.front(); Q.pop();
-        if (u.level == -1) v.level = 0;
+        u = Q.top(); Q.pop();
+
+        if (u.bound <= maxProfit) continue;
         if (u.level == n - 1) continue;
 
         v.level = u.level + 1;
 
-        // Nhanh 1: Chon item v.level
+        // Nhánh 1: Chọn item v.level
         v.weight = u.weight + items[v.level].weight;
         v.profit = u.profit + items[v.level].value;
         v.currentSelection = u.currentSelection;
         v.currentSelection.push_back(items[v.level]);
 
-        if (v.weight <= maxWeight && v.profit > maxProfit) {
-            maxProfit = v.profit;
-            bestSelection = v.currentSelection;
+        if (v.weight <= maxWeight) {
+            if (v.profit > maxProfit) {
+                maxProfit = v.profit;
+                bestSelection = v.currentSelection;
+            }
+            v.bound = bound(v, n, maxWeight, items);
+            if (v.bound > maxProfit) Q.push(v);
         }
-        v.bound = bound(v, n, maxWeight, items);
-        if (v.bound > maxProfit) Q.push(v);
 
-        // Nhanh 2: Khong chon item v.level
+        // Nhánh 2: Không chọn item v.level
         v.weight = u.weight;
         v.profit = u.profit;
-        v.currentSelection = u.currentSelection; // Reset lai
+        v.currentSelection = u.currentSelection;
         v.bound = bound(v, n, maxWeight, items);
         if (v.bound > maxProfit) Q.push(v);
     }

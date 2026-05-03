@@ -5,8 +5,9 @@
 #include <chrono>
 #include <iomanip>
 #include <cstdlib>
+#include <algorithm>
 
-// Import mã nguồn từ src (giả định biên dịch cùng các file .cpp trong src)
+// Import mã nguồn từ src
 #include "../src/models.h"
 #include "../src/dataset_loader.h"
 #include "../src/knapsack_algorithms.h"
@@ -15,10 +16,26 @@
 
 using namespace std;
 
+struct Result {
+    string dataset;
+    int items;
+    string scenario;
+    double fillRate;
+    double timeMs;
+    long long totalValue;
+};
+
+void printResult(const Result& res) {
+    cout << "  -> " << left << setw(20) << res.scenario 
+         << " | Value: " << setw(8) << res.totalValue 
+         << " | Fill: " << fixed << setprecision(2) << setw(6) << res.fillRate << "%"
+         << " | Time: " << setw(8) << res.timeMs << " ms" << endl;
+}
+
 int main() {
-    cout << "===============================================\n";
-    cout << "  C++ REAL BENCHMARK ENGINE (ACTUAL ALGORITHMS)\n";
-    cout << "===============================================\n";
+    cout << "===============================================================\n";
+    cout << "          BENCHMARK SYSTEM FOR CHAPTER 2 & 3 REPORT            \n";
+    cout << "===============================================================\n";
 
     // Tạo thư mục results nếu chưa có
     #ifdef _WIN32
@@ -27,145 +44,116 @@ int main() {
         system("mkdir -p results");
     #endif
 
-    vector<string> datasets;
-    ifstream testFile("data/all_tests.txt");
-    if (testFile.is_open()) {
-        string line;
-        while (getline(testFile, line)) {
-            if (!line.empty() && line[0] != '#') {
-                datasets.push_back(line);
-            }
-        }
-        testFile.close();
-    } else {
-        cerr << "[Loi] Khong the mo file data/all_tests.txt\n";
-        return 1;
-    }
+    ofstream csv("results/benchmark_report_data.csv");
+    csv << "Dataset,NumItems,Scenario,TotalValue($),FillRate(%),Time(ms)\n";
 
-    // Cấu hình các bộ test (Knapsack + Packing)
-    struct TestConfig {
-        string kName;
-        string pName;
-        int kType; // 1: DP, 2: Greedy, 3: BnB
-        Strategy pStrat;
+    // Danh sách datasets cho Time Complexity Test
+    vector<string> timeDatasets = {
+        "data/random/input_50_items.txt",
+        "data/random/input_100_items.txt",
+        "data/random/input_200_items.txt",
+        "data/random/input_500_items.txt",
+        "data/random/input_1000_items.txt"
     };
 
-    vector<TestConfig> configs = {
-        {"Greedy", "FF", 2, FIRST_FIT},
-        {"Greedy", "BF", 2, BEST_FIT},
-        {"Greedy", "FFD", 2, FFD},
-        {"Greedy", "BFD", 2, BFD},
-        {"DP", "FFD", 1, FFD},
-        {"DP", "BFD", 1, BFD},
-        {"DP", "EP", 1, EXTREME_POINT},
-        {"BnB", "FFD", 3, FFD},
-        {"BnB", "EP", 3, EXTREME_POINT}
-    };
+    cout << "\n[1] TEST DO PHUC TAP THOI GIAN (TIME COMPLEXITY)\n";
+    cout << "Sử dụng cấu hình: Greedy + First Fit (Nhanh nhất)\n";
+    cout << "---------------------------------------------------------------\n";
 
-    ofstream csv("results/benchmark_results.csv");
-    if (!csv.is_open()) {
-        cerr << "[Loi] Khong the tao file csv trong thu muc results/\n";
-        return 1;
-    }
-
-    csv << "Dataset,Items,Knapsack,Packing,FillRate(%),Time(ms),TotalValue($)\n";
-
-    for (const auto& dPath : datasets) {
-        cout << "\n[+] Dang chay test tren: " << dPath << "...\n";
-        
-        // Load dữ liệu thật
+    for (const auto& dPath : timeDatasets) {
         Container baseCont = DatasetLoader::loadContainer(dPath);
         vector<Item> allItems = DatasetLoader::loadItems(dPath);
+        if (allItems.empty()) continue;
+
+        auto start = chrono::high_resolution_clock::now();
         
-        if (allItems.empty()) {
-            cout << "  [!] Bo qua: File khong ton tai hoac rong.\n";
-            continue;
+        vector<Item> selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
+        vector<Container> packed = solveBasicPacking(selected, baseCont, FIRST_FIT);
+        
+        auto end = chrono::high_resolution_clock::now();
+        double duration = chrono::duration<double, milli>(end - start).count();
+
+        double fillRate = 0;
+        long long totalVal = 0;
+        if (!packed.empty()) {
+            fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
+            for(const auto& item : packed[0].packedItems) totalVal += item.value;
         }
 
-        int numItems = (int)allItems.size();
+        Result res = {dPath, (int)allItems.size(), "TimeComplexity", fillRate, duration, totalVal};
+        cout << "  n = " << setw(4) << allItems.size() << " | Time: " << fixed << setprecision(2) << duration << " ms" << endl;
+        csv << dPath << "," << allItems.size() << "," << "TimeComplexity," << totalVal << "," << fillRate << "," << duration << "\n";
+    }
 
-        // --- Chạy các tổ hợp Knapsack + Packing ---
-        for (const auto& cfg : configs) {
-            // Bỏ qua BnB trên dataset lớn (>200 items) vì thời gian chạy quá lâu
-            if (cfg.kType == 3 && numItems > 200) {
-                cout << "  -> " << cfg.kName << " + " << cfg.pName << "... SKIP (>200 items)\n";
-                continue;
-            }
+    cout << "\n[2] TEST SO SANH SU DANH DOI (TRADE-OFF)\n";
+    cout << "Sử dụng dataset: data/random/input_100_items.txt\n";
+    cout << "---------------------------------------------------------------\n";
 
-            cout << "  -> " << cfg.kName << " + " << cfg.pName << "... ";
+    string tradeOffDataset = "data/random/input_100_items.txt";
+    Container baseCont = DatasetLoader::loadContainer(tradeOffDataset);
+    vector<Item> allItems = DatasetLoader::loadItems(tradeOffDataset);
 
-            auto start = chrono::high_resolution_clock::now();
-
-            // 1. Chạy Knapsack thật
-            vector<Item> selected;
-            if (cfg.kType == 1) selected = solveKnapsackDP(allItems, baseCont.maxWeight);
-            else if (cfg.kType == 2) selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
-            else selected = solveKnapsackBranchAndBound(allItems, baseCont.maxWeight);
-
-            // 2. Chạy Packing thật
-            vector<Container> packed = solveBasicPacking(selected, baseCont, cfg.pStrat);
-            
-            auto end = chrono::high_resolution_clock::now();
-            double duration = chrono::duration<double, milli>(end - start).count();
-
-            // 3. Tính toán kết quả thực tế
-            double fillRate = 0;
-            long long totalVal = 0;
-            if (!packed.empty()) {
-                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
-                for(const auto& item : packed[0].packedItems) totalVal += item.value;
-            }
-
-            csv << dPath << "," << numItems << "," << cfg.kName << "," 
-                << cfg.pName << "," << fixed << setprecision(2) << fillRate << "," 
-                << duration << "," << totalVal << "\n";
-                
-            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
-        }
-
-        // --- Chạy Meta-heuristics: Genetic Algorithm ---
+    if (!allItems.empty()) {
+        // Lần 1: Nhanh (Greedy + First Fit)
         {
-            cout << "  -> GA (Genetic Algorithm)... ";
             auto start = chrono::high_resolution_clock::now();
-            vector<Container> packed = solveGeneticAlgorithm(allItems, baseCont);
+            vector<Item> selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
+            vector<Container> packed = solveBasicPacking(selected, baseCont, FIRST_FIT);
             auto end = chrono::high_resolution_clock::now();
             double duration = chrono::duration<double, milli>(end - start).count();
 
-            double fillRate = 0;
-            long long totalVal = 0;
+            double fillRate = 0; long long totalVal = 0;
             if (!packed.empty()) {
                 fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
                 for(const auto& item : packed[0].packedItems) totalVal += item.value;
             }
-            csv << dPath << "," << numItems << ",GA,GA," << fixed << setprecision(2) 
-                << fillRate << "," << duration << "," << totalVal << "\n";
-            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
+            Result res = {tradeOffDataset, 100, "Fast (Greedy+FF)", fillRate, duration, totalVal};
+            printResult(res);
+            csv << tradeOffDataset << ",100," << res.scenario << "," << totalVal << "," << fillRate << "," << duration << "\n";
         }
 
-        // --- Chạy Meta-heuristics: Simulated Annealing ---
+        // Lần 2: Tối ưu (BnB + Extreme Points + SA)
         {
-            cout << "  -> SA (Simulated Annealing)... ";
             auto start = chrono::high_resolution_clock::now();
-            vector<Container> packed = solveSimulatedAnnealing(allItems, baseCont);
+            vector<Item> selected = solveKnapsackBranchAndBound(allItems, baseCont.maxWeight);
+            vector<Container> packed = solveSimulatedAnnealing(selected, baseCont, EXTREME_POINT);
             auto end = chrono::high_resolution_clock::now();
             double duration = chrono::duration<double, milli>(end - start).count();
 
-            double fillRate = 0;
-            long long totalVal = 0;
+            double fillRate = 0; long long totalVal = 0;
             if (!packed.empty()) {
                 fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
                 for(const auto& item : packed[0].packedItems) totalVal += item.value;
             }
-            csv << dPath << "," << numItems << ",SA,SA," << fixed << setprecision(2) 
-                << fillRate << "," << duration << "," << totalVal << "\n";
-            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
+            Result res = {tradeOffDataset, 100, "Optimized (BnB+EP+SA)", fillRate, duration, totalVal};
+            printResult(res);
+            csv << tradeOffDataset << ",100," << res.scenario << "," << totalVal << "," << fillRate << "," << duration << "\n";
+        }
+
+        // Lần 3: Siêu tối ưu (DP + Extreme Points + GA)
+        {
+            auto start = chrono::high_resolution_clock::now();
+            vector<Item> selected = solveKnapsackDP(allItems, baseCont.maxWeight);
+            vector<Container> packed = solveGeneticAlgorithm(selected, baseCont, EXTREME_POINT);
+            auto end = chrono::high_resolution_clock::now();
+            double duration = chrono::duration<double, milli>(end - start).count();
+
+            double fillRate = 0; long long totalVal = 0;
+            if (!packed.empty()) {
+                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
+                for(const auto& item : packed[0].packedItems) totalVal += item.value;
+            }
+            Result res = {tradeOffDataset, 100, "HighlyOpt (DP+EP+GA)", fillRate, duration, totalVal};
+            printResult(res);
+            csv << tradeOffDataset << ",100," << res.scenario << "," << totalVal << "," << fillRate << "," << duration << "\n";
         }
     }
 
     csv.close();
-    cout << "\n===============================================\n";
-    cout << "  HOAN THANH! Ket qua luu tai: results/benchmark_results.csv\n";
-    cout << "===============================================\n";
+    cout << "\n===============================================================\n";
+    cout << "  HOAN THANH! Ket qua da duoc luu tai results/benchmark_report_data.csv\n";
+    cout << "  Cậu có thể dùng file CSV này để vẽ biểu đồ cho Chương 2 & 3.\n";
+    cout << "===============================================================\n";
 
     return 0;
 }

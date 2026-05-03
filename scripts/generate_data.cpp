@@ -54,8 +54,8 @@ int main() {
 
     int C_W = 100, C_H = 100, C_D = 200, MAX_W = 5000;
 
-    // 1. Data/random (50, 100, 500 items)
-    for (int num : {50, 100, 500}) {
+    // 1. Data/random (50, 100, 200, 500, 1000 items)
+    for (int num : {50, 100, 200, 500, 1000}) {
         vector<GeneratedItem> items;
         uniform_int_distribution<int> dist_size(5, 50);
         uniform_real_distribution<double> dist_density(0.002, 0.008);
