@@ -16,7 +16,35 @@
 
 using namespace std;
 
-<<<<<<< HEAD
+namespace {
+
+struct BenchmarkMetrics {
+    int containersUsed = 0;
+    int packedItems = 0;
+    long long usedVolume = 0;
+    long long totalVolume = 0;
+    long long totalValue = 0;
+    double fillRate = 0.0;
+};
+
+BenchmarkMetrics summarizePacking(const vector<Container>& packed) {
+    BenchmarkMetrics metrics;
+    for (const auto& cont : packed) {
+        if (cont.packedItems.empty()) continue;
+        ++metrics.containersUsed;
+        metrics.packedItems += static_cast<int>(cont.packedItems.size());
+        metrics.usedVolume += cont.getUsedVolume();
+        metrics.totalVolume += cont.getMaxVolume();
+        for (const auto& item : cont.packedItems) {
+            metrics.totalValue += item.value;
+        }
+    }
+    if (metrics.totalVolume > 0) {
+        metrics.fillRate = static_cast<double>(metrics.usedVolume) / metrics.totalVolume * 100.0;
+    }
+    return metrics;
+}
+
 struct Result {
     string dataset;
     int items;
@@ -33,44 +61,15 @@ void printResult(const Result& res) {
          << " | Time: " << setw(8) << res.timeMs << " ms" << endl;
 }
 
-=======
-namespace {
-
-struct BenchmarkMetrics {
-    int containersUsed = 0;
-    int packedItems = 0;
-    long long usedVolume = 0;
-    long long totalVolume = 0;
-    long long totalValue = 0;
-    double fillRate = 0.0;
-};
-
-BenchmarkMetrics summarizePacking(const vector<Container>& packed) {
-    BenchmarkMetrics metrics;
-
-    for (const auto& cont : packed) {
-        if (cont.packedItems.empty()) continue;
-
-        ++metrics.containersUsed;
-        metrics.packedItems += static_cast<int>(cont.packedItems.size());
-        metrics.usedVolume += cont.getUsedVolume();
-        metrics.totalVolume += cont.getMaxVolume();
-
-        for (const auto& item : cont.packedItems) {
-            metrics.totalValue += item.value;
-        }
-    }
-
-    if (metrics.totalVolume > 0) {
-        metrics.fillRate = static_cast<double>(metrics.usedVolume) / metrics.totalVolume * 100.0;
-    }
-
-    return metrics;
+void writeCsvRow(ofstream& csv, const string& dPath, int items, const string& kName, const string& pName, const BenchmarkMetrics& m, double time) {
+    // Format: Dataset,Items,Knapsack,Packing,ContainersUsed,PackedItems,FillRate(%),Time(ms),TotalValue($),UsedVolume,CapacityVolume
+    csv << dPath << "," << items << "," << kName << "," << pName << "," 
+        << m.containersUsed << "," << m.packedItems << "," << fixed << setprecision(2) << m.fillRate << "," 
+        << time << "," << m.totalValue << "," << m.usedVolume << "," << m.totalVolume << "\n";
 }
 
 } // namespace
 
->>>>>>> 2eb3f27 (update dataset esicup)
 int main() {
     cout << "===============================================================\n";
     cout << "          BENCHMARK SYSTEM FOR CHAPTER 2 & 3 REPORT            \n";
@@ -83,8 +82,12 @@ int main() {
         system("mkdir -p results");
     #endif
 
-    ofstream csv("results/benchmark_report_data.csv");
-    csv << "Dataset,NumItems,Scenario,TotalValue($),FillRate(%),Time(ms)\n";
+    ofstream csv("results/benchmark_results.csv");
+    if (!csv.is_open()) {
+        cerr << "[Loi] Khong the tao file csv trong thu muc results/\n";
+        return 1;
+    }
+    csv << "Dataset,Items,Knapsack,Packing,ContainersUsed,PackedItems,FillRate(%),Time(ms),TotalValue($),UsedVolume,CapacityVolume\n";
 
     // Danh sách datasets cho Time Complexity Test
     vector<string> timeDatasets = {
@@ -99,44 +102,20 @@ int main() {
     cout << "Sử dụng cấu hình: Greedy + First Fit (Nhanh nhất)\n";
     cout << "---------------------------------------------------------------\n";
 
-<<<<<<< HEAD
     for (const auto& dPath : timeDatasets) {
-=======
-    ofstream csv("results/benchmark_results.csv");
-    if (!csv.is_open()) {
-        cerr << "[Loi] Khong the tao file csv trong thu muc results/\n";
-        return 1;
-    }
-
-    csv << "Dataset,Items,Knapsack,Packing,ContainersUsed,PackedItems,FillRate(%),Time(ms),TotalValue($),UsedVolume,CapacityVolume\n";
-
-    for (const auto& dPath : datasets) {
-        cout << "\n[+] Dang chay test tren: " << dPath << "...\n";
-        
-        // Load dữ liệu thật
->>>>>>> 2eb3f27 (update dataset esicup)
         Container baseCont = DatasetLoader::loadContainer(dPath);
         vector<Item> allItems = DatasetLoader::loadItems(dPath);
         if (allItems.empty()) continue;
 
         auto start = chrono::high_resolution_clock::now();
-        
         vector<Item> selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
         vector<Container> packed = solveBasicPacking(selected, baseCont, FIRST_FIT);
-        
         auto end = chrono::high_resolution_clock::now();
         double duration = chrono::duration<double, milli>(end - start).count();
 
-        double fillRate = 0;
-        long long totalVal = 0;
-        if (!packed.empty()) {
-            fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
-            for(const auto& item : packed[0].packedItems) totalVal += item.value;
-        }
-
-        Result res = {dPath, (int)allItems.size(), "TimeComplexity", fillRate, duration, totalVal};
+        BenchmarkMetrics metrics = summarizePacking(packed);
         cout << "  n = " << setw(4) << allItems.size() << " | Time: " << fixed << setprecision(2) << duration << " ms" << endl;
-        csv << dPath << "," << allItems.size() << "," << "TimeComplexity," << totalVal << "," << fillRate << "," << duration << "\n";
+        writeCsvRow(csv, dPath, (int)allItems.size(), "Greedy", "FF", metrics, duration);
     }
 
     cout << "\n[2] TEST SO SANH SU DANH DOI (TRADE-OFF)\n";
@@ -147,38 +126,9 @@ int main() {
     Container baseCont = DatasetLoader::loadContainer(tradeOffDataset);
     vector<Item> allItems = DatasetLoader::loadItems(tradeOffDataset);
 
-<<<<<<< HEAD
     if (!allItems.empty()) {
+        int n = (int)allItems.size();
         // Lần 1: Nhanh (Greedy + First Fit)
-=======
-            auto start = chrono::high_resolution_clock::now();
-
-            // 1. Chạy Knapsack thật
-            vector<Item> selected;
-            if (cfg.kType == 1) selected = solveKnapsackDP(allItems, baseCont.maxWeight);
-            else if (cfg.kType == 2) selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
-            else selected = solveKnapsackBranchAndBound(allItems, baseCont.maxWeight);
-
-            // 2. Chạy Packing thật
-            vector<Container> packed = solveBasicPacking(selected, baseCont, cfg.pStrat);
-            
-            auto end = chrono::high_resolution_clock::now();
-            double duration = chrono::duration<double, milli>(end - start).count();
-
-            // 3. Tính toán kết quả thực tế
-            BenchmarkMetrics metrics = summarizePacking(packed);
-
-            csv << dPath << "," << numItems << "," << cfg.kName << "," 
-                << cfg.pName << "," << metrics.containersUsed << "," << metrics.packedItems
-                << "," << fixed << setprecision(2) << metrics.fillRate << "," 
-                << duration << "," << metrics.totalValue << ","
-                << metrics.usedVolume << "," << metrics.totalVolume << "\n";
-                
-            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
-        }
-
-        // --- Chạy Meta-heuristics: Genetic Algorithm ---
->>>>>>> 2eb3f27 (update dataset esicup)
         {
             auto start = chrono::high_resolution_clock::now();
             vector<Item> selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
@@ -186,23 +136,9 @@ int main() {
             auto end = chrono::high_resolution_clock::now();
             double duration = chrono::duration<double, milli>(end - start).count();
 
-<<<<<<< HEAD
-            double fillRate = 0; long long totalVal = 0;
-            if (!packed.empty()) {
-                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
-                for(const auto& item : packed[0].packedItems) totalVal += item.value;
-            }
-            Result res = {tradeOffDataset, 100, "Fast (Greedy+FF)", fillRate, duration, totalVal};
-            printResult(res);
-            csv << tradeOffDataset << ",100," << res.scenario << "," << totalVal << "," << fillRate << "," << duration << "\n";
-=======
             BenchmarkMetrics metrics = summarizePacking(packed);
-            csv << dPath << "," << numItems << ",GA,GA," << metrics.containersUsed << ","
-                << metrics.packedItems << "," << fixed << setprecision(2) 
-                << metrics.fillRate << "," << duration << "," << metrics.totalValue << ","
-                << metrics.usedVolume << "," << metrics.totalVolume << "\n";
-            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
->>>>>>> 2eb3f27 (update dataset esicup)
+            printResult({tradeOffDataset, n, "Fast (Greedy+FF)", metrics.fillRate, duration, metrics.totalValue});
+            writeCsvRow(csv, tradeOffDataset, n, "Greedy", "First-Fit", metrics, duration);
         }
 
         // Lần 2: Tối ưu (BnB + Extreme Points + SA)
@@ -213,15 +149,9 @@ int main() {
             auto end = chrono::high_resolution_clock::now();
             double duration = chrono::duration<double, milli>(end - start).count();
 
-<<<<<<< HEAD
-            double fillRate = 0; long long totalVal = 0;
-            if (!packed.empty()) {
-                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
-                for(const auto& item : packed[0].packedItems) totalVal += item.value;
-            }
-            Result res = {tradeOffDataset, 100, "Optimized (BnB+EP+SA)", fillRate, duration, totalVal};
-            printResult(res);
-            csv << tradeOffDataset << ",100," << res.scenario << "," << totalVal << "," << fillRate << "," << duration << "\n";
+            BenchmarkMetrics metrics = summarizePacking(packed);
+            printResult({tradeOffDataset, n, "Optimized (BnB+EP+SA)", metrics.fillRate, duration, metrics.totalValue});
+            writeCsvRow(csv, tradeOffDataset, n, "BnB", "EP-SA", metrics, duration);
         }
 
         // Lần 3: Siêu tối ưu (DP + Extreme Points + GA)
@@ -232,29 +162,16 @@ int main() {
             auto end = chrono::high_resolution_clock::now();
             double duration = chrono::duration<double, milli>(end - start).count();
 
-            double fillRate = 0; long long totalVal = 0;
-            if (!packed.empty()) {
-                fillRate = (double)packed[0].getUsedVolume() / packed[0].getMaxVolume() * 100;
-                for(const auto& item : packed[0].packedItems) totalVal += item.value;
-            }
-            Result res = {tradeOffDataset, 100, "HighlyOpt (DP+EP+GA)", fillRate, duration, totalVal};
-            printResult(res);
-            csv << tradeOffDataset << ",100," << res.scenario << "," << totalVal << "," << fillRate << "," << duration << "\n";
-=======
             BenchmarkMetrics metrics = summarizePacking(packed);
-            csv << dPath << "," << numItems << ",SA,SA," << metrics.containersUsed << ","
-                << metrics.packedItems << "," << fixed << setprecision(2) 
-                << metrics.fillRate << "," << duration << "," << metrics.totalValue << ","
-                << metrics.usedVolume << "," << metrics.totalVolume << "\n";
-            cout << "Xong (" << fixed << setprecision(2) << duration << " ms)\n";
->>>>>>> 2eb3f27 (update dataset esicup)
+            printResult({tradeOffDataset, n, "HighlyOpt (DP+EP+GA)", metrics.fillRate, duration, metrics.totalValue});
+            writeCsvRow(csv, tradeOffDataset, n, "DP", "EP-GA", metrics, duration);
         }
     }
 
     csv.close();
     cout << "\n===============================================================\n";
-    cout << "  HOAN THANH! Ket qua da duoc luu tai results/benchmark_report_data.csv\n";
-    cout << "  Cậu có thể dùng file CSV này để vẽ biểu đồ cho Chương 2 & 3.\n";
+    cout << "  HOAN THANH! Ket qua da duoc luu tai results/benchmark_results.csv\n";
+    cout << "  Cau co the dung scripts/plot_benchmark.cpp de ve bieu do.\n";
     cout << "===============================================================\n";
 
     return 0;

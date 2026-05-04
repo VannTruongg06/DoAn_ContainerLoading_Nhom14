@@ -1,0 +1,6 @@
+# Container: 100x100x100
+100 100 100 1000
+# Item 1 is too big
+1 150 50 50 10 100
+# Item 2 fits
+2 50 50 50 10 100

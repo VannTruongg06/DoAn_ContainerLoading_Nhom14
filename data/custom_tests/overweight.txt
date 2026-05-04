@@ -1,0 +1,6 @@
+# Container: 100x100x100, MaxWeight: 500
+100 100 100 500
+# Item 1 fits dimensions but is too heavy (600 > 500)
+1 10 10 10 600 1000
+# Item 2 is light and fits
+2 50 50 50 100 500
