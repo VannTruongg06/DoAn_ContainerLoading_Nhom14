@@ -1,0 +1,9 @@
+# Weight Challenge: Lead vs Feathers
+100 100 100 1000
+# Lead blocks (Small, Heavy)
+1 10 10 10 400 1000
+2 10 10 10 400 1000
+# Feathers (Large, Light)
+3 80 80 80 50 100
+4 80 80 80 50 100
+# If Knapsack works, it should pick Item 1, 2 and forget 3, 4 to max value within 1000 weight.

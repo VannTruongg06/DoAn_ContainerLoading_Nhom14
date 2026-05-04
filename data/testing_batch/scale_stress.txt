@@ -1,0 +1,6 @@
+# Scale Test: 1200 items to stress test execution time
+100 100 500 20000
+# Generating 1200 items (simulated)
+1 10 10 10 5 10
+2 20 20 20 10 20
+# ... (Adding a mix of items)
