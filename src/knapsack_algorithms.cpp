@@ -1,6 +1,7 @@
 #include "knapsack_algorithms.h"
 #include <algorithm>
 #include <queue>
+#include <iostream>
 
 using namespace std;
 
@@ -80,7 +81,7 @@ double bound(Node u, int n, int maxWeight, const vector<Item>& items) {
 }
 
 // 3. Nhánh Cận (Branch and Bound) - Best First Search
-vector<Item> solveKnapsackBranchAndBound(const vector<Item>& items_in, int maxWeight) {
+vector<Item> solveKnapsackBranchAndBound(const vector<Item>& items_in, int maxWeight, long long nodeLimit) {
     vector<Item> items = items_in;
     sort(items.begin(), items.end(), [](const Item& a, const Item& b) {
         return a.getDensity() > b.getDensity();
@@ -101,9 +102,16 @@ vector<Item> solveKnapsackBranchAndBound(const vector<Item>& items_in, int maxWe
     int maxProfit = 0;
     vector<Item> bestSelection;
     int n = items.size();
+    long long nodesProcessed = 0;
 
     while (!Q.empty()) {
         u = Q.top(); Q.pop();
+        nodesProcessed++;
+
+        if (nodesProcessed > nodeLimit) {
+            cout << "\n[!] BnB dat gioi han " << nodeLimit << " nodes. Tra ve ket qua tot nhat hien tai.\n";
+            break;
+        }
 
         if (u.bound <= maxProfit) continue;
         if (u.level == n - 1) continue;

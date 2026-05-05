@@ -4,10 +4,10 @@
 #include <vector>
 #include "models.h"
 
-// 9. Giải thuật Di truyền (Genetic Algorithm)
-std::vector<Container> solveGeneticAlgorithm(std::vector<Item> items, Container baseCont, Strategy strat = FFD);
+// 9. Giải Thuật Di Truyền (GA)
+std::vector<Container> solveGeneticAlgorithm(std::vector<Item> items, Container baseCont, Strategy strat = FFD, int generations = 50, int popSize = 20);
 
 // 10. Thuật toán Luyện kim mô phỏng (Simulated Annealing)
-std::vector<Container> solveSimulatedAnnealing(std::vector<Item> items, Container baseCont, Strategy strat = FIRST_FIT);
+std::vector<Container> solveSimulatedAnnealing(std::vector<Item> items, Container baseCont, Strategy strat = FIRST_FIT, int iterations = 100);
 
 #endif

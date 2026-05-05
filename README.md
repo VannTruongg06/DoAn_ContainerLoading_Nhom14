@@ -69,9 +69,9 @@ Mở `ui/index.html` bằng **Live Server**, nhấn **"Tải file JSON"** và ch
 ## 📈 Kiểm thử diện rộng (Benchmark)
 
 Để lấy số liệu cho báo cáo (Độ phức tạp, Trade-off):
-1. Chạy `.\benchmark.exe` để quét toàn bộ dataset.
-2. Kết quả lưu tại `results/benchmark_results.csv`.
-3. (Tùy chọn) Chạy `.\plot_benchmark.exe` để xuất biểu đồ ảnh trong `results/plots/`.
+1. **Smart Benchmark (Khuyến nghị)**: Chạy `.\smart_benchmark.exe`. Đây là hệ thống phân tầng giúp chạy 21 tổ hợp thuật toán trên dữ liệu nhỏ và các thuật toán nhanh trên dữ liệu lớn, tránh treo máy.
+2. **Standard Benchmark**: Chạy `.\benchmark.exe` để quét toàn bộ dataset (lưu ý có thể chậm với dữ liệu cực lớn).
+3. Kết quả lưu tại `results/smart_benchmark.csv` hoặc `results/benchmark_results.csv`.
 
 ---
 **Nhóm 14 - Đồ án Phân tích và Thiết kế Thuật toán**

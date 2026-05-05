@@ -11,6 +11,6 @@ std::vector<Item> solveKnapsackDP(const std::vector<Item>& items, int maxWeight)
 std::vector<Item> solveKnapsackGreedy(std::vector<Item> items, int maxWeight);
 
 // 3. Giải bằng Nhánh cận (Branch and Bound)
-std::vector<Item> solveKnapsackBranchAndBound(const std::vector<Item>& items, int maxWeight);
+std::vector<Item> solveKnapsackBranchAndBound(const std::vector<Item>& items, int maxWeight, long long nodeLimit = 10000000);
 
 #endif

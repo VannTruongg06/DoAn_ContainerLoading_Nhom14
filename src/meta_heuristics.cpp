@@ -4,6 +4,7 @@
 #include <random>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -19,9 +20,7 @@ double calculateFitness(const vector<Container>& solution) {
 }
 
 // 9. Giải Thuật Di Truyền (GA)
-vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont, Strategy strat) {
-    int popSize = 20;
-    int generations = 50;
+vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont, Strategy strat, int generations, int popSize) {
     random_device rd;
     mt19937 g(rd());
 
@@ -40,7 +39,7 @@ vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont, 
 
         // Đánh giá
         for (const auto& indiv : population) {
-            vector<Container> sol = solveBasicPacking(indiv, baseCont, strat); // Dùng strategy được truyền vào
+            vector<Container> sol = solveBasicPacking(indiv, baseCont, strat);
             double fit = calculateFitness(sol);
             fitnessList.push_back({fit, indiv});
             
@@ -49,25 +48,40 @@ vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont, 
                 bestSolution = sol;
             }
         }
-// ... rest of logic unchanged ...
-
 
         // Chọn lọc & Lai ghép (Crossover PMX đơn giản)
         sort(fitnessList.rbegin(), fitnessList.rend()); // Giảm dần
         vector<vector<Item>> newPopulation;
         
-        // Giữ lại Elitism
-        for(int i = 0; i < popSize / 4; i++) newPopulation.push_back(fitnessList[i].second);
+        // Giữ lại Elitism (Top 25%)
+        for(int i = 0; i < popSize / 4; i++) {
+            newPopulation.push_back(fitnessList[i].second);
+        }
 
-        // Lai ghép
+        // Lai ghép để bù đắp dân số
         while(newPopulation.size() < popSize) {
-            vector<Item> p1 = fitnessList[rand() % (popSize/2)].second;
-            vector<Item> p2 = fitnessList[rand() % (popSize/2)].second;
-            // Lai ghép cắt điểm (Single-point Crossover) kết hợp chống trùng
+            const vector<Item>& p1 = fitnessList[rand() % (popSize/2)].second;
+            const vector<Item>& p2 = fitnessList[rand() % (popSize/2)].second;
+            
+            // Lai ghép cắt điểm (Single-point Crossover)
             int split = rand() % p1.size();
-            vector<Item> child = p1;
-            // Đây là hoán vị nên cần cẩn thận (Để đơn giản, dùng lại giải thuật trộn)
-            shuffle(child.begin() + split, child.end(), g); 
+            vector<Item> child;
+            child.reserve(p1.size());
+            
+            // Copy phần đầu từ p1
+            for(int i = 0; i < split; ++i) child.push_back(p1[i]);
+            
+            // Copy phần còn lại từ p2 nếu chưa có trong child
+            for(const auto& item : p2) {
+                bool exists = false;
+                for(const auto& cItem : child) {
+                    if(cItem.id == item.id) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if(!exists) child.push_back(item);
+            }
             newPopulation.push_back(child);
         }
 
@@ -86,10 +100,10 @@ vector<Container> solveGeneticAlgorithm(vector<Item> items, Container baseCont, 
 }
 
 // 10. Thuật toán Luyện kim mô phỏng (Simulated Annealing)
-vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont, Strategy strat) {
+vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont, Strategy strat, int iterations) {
     double initialTemp = 1000.0;
-    double coolingRate = 0.95;
     double finalTemp = 1.0;
+    double coolingRate = pow(finalTemp / initialTemp, 1.0 / iterations);
     
     random_device rd;
     mt19937 g(rd());
@@ -104,12 +118,14 @@ vector<Container> solveSimulatedAnnealing(vector<Item> items, Container baseCont
     double bestEnergy = currentEnergy;
 
     double temp = initialTemp;
-    while (temp > finalTemp) {
+    for (int i = 0; i < iterations; ++i) {
         // Sinh trạng thái lân cận (Swap 2 items)
         vector<Item> newOrder = currentOrder;
-        int idx1 = rand() % newOrder.size();
-        int idx2 = rand() % newOrder.size();
-        swap(newOrder[idx1], newOrder[idx2]);
+        if (newOrder.size() >= 2) {
+            int idx1 = rand() % newOrder.size();
+            int idx2 = rand() % newOrder.size();
+            swap(newOrder[idx1], newOrder[idx2]);
+        }
 
         vector<Container> newSolution = solveBasicPacking(newOrder, baseCont, strat);
         double newEnergy = -calculateFitness(newSolution);

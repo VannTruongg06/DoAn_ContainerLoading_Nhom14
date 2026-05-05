@@ -1,0 +1,41 @@
+
+===============================================================
+       NHÓM 14: BÁO CÁO TỔNG KẾT HIỆU NĂNG THUẬT TOÁN
+===============================================================
+
+Dựa trên dữ liệu thực nghiệm thu được từ Smart Benchmark System, 
+Nhóm 14 xin đưa ra các kết luận kỹ thuật quan trọng sau:
+
+1. HIỆU QUẢ CỦA CHIẾN LƯỢC 2 GIAI ĐOẠN (STAGE-GATE):
+   - Việc tách bài toán thành Giai đoạn 1 (Lọc hàng - Knapsack) và 
+     Giai đoạn 2 (Xếp hàng - Packing) giúp kiểm soát tốt cả tải trọng 
+     lẫn không gian.
+   - Thuật toán Quy hoạch động (DP) ở Giai đoạn 1 chứng minh ưu thế 
+     khi luôn đạt giá trị hàng hóa tối ưu (100%), cao hơn Tham lam (Greedy) 
+     từ 2% - 5% tùy bộ dữ liệu.
+
+2. NHÀ VÔ ĐỊCH VỀ TỐC ĐỘ VÀ CHẤT LƯỢNG (DỮ LIỆU LỚN):
+   - Với bộ dữ liệu ESICUP (Dữ liệu thực tế quốc tế):
+     + Tổ hợp [Greedy + Extreme Points] đạt tỉ lệ lấp đầy ấn tượng 79.40%.
+     + Thời gian xử lý cực nhanh: ~2.65 ms.
+     + So với [Greedy + FFD]: EP không chỉ nhanh hơn mà còn lấp đầy 
+       tốt hơn tới 12% (79% vs 67%).
+
+3. PHÂN TÍCH SỰ ĐÁNH ĐỔI (TRADE-OFF):
+   - Các thuật toán Meta-heuristic (GA, SA) cho kết quả rất ổn định 
+     ở dữ liệu nhỏ nhưng chi phí thời gian tăng vọt (gấp ~40 lần 
+     so với Heuristic cơ bản).
+   - Kiến nghị: Sử dụng [DP + Extreme Points] cho các kho hàng cần 
+     tối ưu lợi nhuận tuyệt đối, và [Greedy + Extreme Points] cho 
+     các hệ thống cần phản hồi thời gian thực (Real-time).
+
+4. TÍNH ỔN ĐỊNH (ROBUSTNESS):
+   - Thuật toán Extreme Points (EP) cho thấy khả năng thích nghi 
+     vượt trội với mọi kích thước container từ 2m đến 12m, trong 
+     khi các thuật toán Grid Search truyền thống dễ bị chậm khi 
+     kích thước container tăng lên.
+
+---
+Đây là những số liệu thực tế "biết nói" giúp minh chứng cho sự thành công 
+của đồ án Nhóm 14.
+===============================================================

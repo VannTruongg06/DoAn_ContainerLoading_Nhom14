@@ -119,6 +119,12 @@ int main() {
     cout << "7. Luyen kim mo phong (Simulated Annealing)\n";
     cout << "Nhap lua chon: "; cin >> choiceP;
 
+    int step = 5;
+    if (choiceP >= 1 && choiceP <= 4) {
+        cout << "Nhap buoc nhay Grid Search (mm) [Mac dinh 5, de nghi 50 cho data lon]: ";
+        cin >> step;
+    }
+
     cout << "\nDang thuc hien thuat toan...\n";
     auto start = chrono::high_resolution_clock::now();
 
@@ -126,7 +132,7 @@ int main() {
     vector<Item> selectedItems;
     if (choiceK == 1) selectedItems = solveKnapsackDP(items, myContainer.maxWeight);
     else if (choiceK == 2) selectedItems = solveKnapsackGreedy(items, myContainer.maxWeight);
-    else selectedItems = solveKnapsackBranchAndBound(items, myContainer.maxWeight);
+    else selectedItems = solveKnapsackBranchAndBound(items, myContainer.maxWeight, 1000000); // Gioi han 1tr node mac dinh
 
     // Thuc thi Menu 2
     vector<Container> result;
@@ -137,11 +143,11 @@ int main() {
         else if (choiceP == 3) s = FFD;
         else if (choiceP == 4) s = BFD;
         else s = EXTREME_POINT;
-        result = solveBasicPacking(selectedItems, myContainer, s);
+        result = solveBasicPacking(selectedItems, myContainer, s, step);
     } else if (choiceP == 6) {
-        result = solveGeneticAlgorithm(selectedItems, myContainer);
+        result = solveGeneticAlgorithm(selectedItems, myContainer, EXTREME_POINT, 20, 10);
     } else {
-        result = solveSimulatedAnnealing(selectedItems, myContainer);
+        result = solveSimulatedAnnealing(selectedItems, myContainer, EXTREME_POINT, 100);
     }
 
     auto end = chrono::high_resolution_clock::now();

@@ -109,7 +109,7 @@ int main() {
 
         auto start = chrono::high_resolution_clock::now();
         vector<Item> selected = solveKnapsackGreedy(allItems, baseCont.maxWeight);
-        vector<Container> packed = solveBasicPacking(selected, baseCont, FIRST_FIT);
+        vector<Container> packed = solveBasicPacking(selected, baseCont, FIRST_FIT, 20); // Step=20 cho benchmark nhanh
         auto end = chrono::high_resolution_clock::now();
         double duration = chrono::duration<double, milli>(end - start).count();
 

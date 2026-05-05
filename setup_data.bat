@@ -29,8 +29,8 @@ echo [3/4] OR-Library demo parser (khong co raw local):
 parse_orlib.exe
 
 echo.
-echo [4/4] ESICUP demo parser (khong co raw local):
-parse_esicup.exe
+echo [4/4] Dang parse ESICUP (du lieu thuc tu data\raw\esicup_extracted)...
+parse_ku_leuven_esicup_multi_container_loading.exe data\raw\esicup_extracted
 
 echo.
 echo ===============================================

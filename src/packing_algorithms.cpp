@@ -32,14 +32,14 @@ bool canPlaceAt(Item& candidate, const Container& cont, int x, int y, int z) {
     return !hasOverlapAt(candidate, cont);
 }
 
-bool tryPlaceFirstFitWithRotation(const Item& src, Container& cont, Item& placed) {
+bool tryPlaceFirstFitWithRotation(const Item& src, Container& cont, Item& placed, int step) {
     for (int rot = 0; rot < 6; ++rot) {
         Item candidate = src;
         candidate.rotate(rot);
 
-        for (int z = 0; z <= cont.depth - candidate.depth; z += kSearchStep) {
-            for (int y = 0; y <= cont.height - candidate.height; y += kSearchStep) {
-                for (int x = 0; x <= cont.width - candidate.width; x += kSearchStep) {
+        for (int z = 0; z <= cont.depth - candidate.depth; z += step) {
+            for (int y = 0; y <= cont.height - candidate.height; y += step) {
+                for (int x = 0; x <= cont.width - candidate.width; x += step) {
                     if (canPlaceAt(candidate, cont, x, y, z)) {
                         candidate.isPacked = true;
                         placed = candidate;
@@ -52,7 +52,7 @@ bool tryPlaceFirstFitWithRotation(const Item& src, Container& cont, Item& placed
     return false;
 }
 
-bool tryPlaceBestFitWithRotation(const Item& src, Container& cont, Item& placed) {
+bool tryPlaceBestFitWithRotation(const Item& src, Container& cont, Item& placed, int step) {
     int bestResidual = numeric_limits<int>::max();
     bool found = false;
     Item bestCandidate = src;
@@ -61,9 +61,9 @@ bool tryPlaceBestFitWithRotation(const Item& src, Container& cont, Item& placed)
         Item candidate = src;
         candidate.rotate(rot);
 
-        for (int z = 0; z <= cont.depth - candidate.depth; z += kSearchStep) {
-            for (int y = 0; y <= cont.height - candidate.height; y += kSearchStep) {
-                for (int x = 0; x <= cont.width - candidate.width; x += kSearchStep) {
+        for (int z = 0; z <= cont.depth - candidate.depth; z += step) {
+            for (int y = 0; y <= cont.height - candidate.height; y += step) {
+                for (int x = 0; x <= cont.width - candidate.width; x += step) {
                     if (!canPlaceAt(candidate, cont, x, y, z)) continue;
 
                     int residual = (cont.width - x - candidate.width) +
@@ -159,7 +159,7 @@ bool tryPlaceInEmptyContainer(const Item& src, Container& cont, Item& placed) {
 } // namespace
 
 // 4-8. Ham giai quyet bai toan xep hang voi cac chien luoc khac nhau
-vector<Container> solveBasicPacking(vector<Item> items, Container baseCont, Strategy strat) {
+vector<Container> solveBasicPacking(vector<Item> items, Container baseCont, Strategy strat, int step) {
     vector<Container> result;
 
     if (strat == FFD || strat == BFD) {
@@ -182,9 +182,9 @@ vector<Container> solveBasicPacking(vector<Item> items, Container baseCont, Stra
             if (strat == EXTREME_POINT) {
                 ok = tryPlaceExtremePointWithRotation(srcItem, cont, placedItem);
             } else if (strat == FIRST_FIT || strat == FFD) {
-                ok = tryPlaceFirstFitWithRotation(srcItem, cont, placedItem);
+                ok = tryPlaceFirstFitWithRotation(srcItem, cont, placedItem, step);
             } else {
-                ok = tryPlaceBestFitWithRotation(srcItem, cont, placedItem);
+                ok = tryPlaceBestFitWithRotation(srcItem, cont, placedItem, step);
             }
 
             if (ok) {
